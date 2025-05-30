@@ -40,3 +40,8 @@ logs/
 # OS specific
 .DS_Store
 Thumbs.db
+
+# Exclude these directories from the project root
+/translation/
+/text/
+/whisper/

@@ -67,6 +67,7 @@ def process(sources: List[str], config: Optional[str], output_dir: Optional[str]
         WebExtractor(),
         PDFExtractor(),
         OCRPDFExtractor(),
+        OCRImageExtractor(),
         AudioExtractor(cfg.whisper.model),
         PlainTextExtractor(),
         # TODO: Add other extractors

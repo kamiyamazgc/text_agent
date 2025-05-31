@@ -1,5 +1,5 @@
 from pathlib import Path
-from typing import Any, Dict, Tuple
+from typing import Any, Dict, Optional, Tuple
 
 try:
     import whisper  # type: ignore
@@ -14,10 +14,11 @@ class AudioExtractor(BaseExtractor):
 
     SUPPORTED_EXTENSIONS: Tuple[str, ...] = (".mp3", ".wav", ".m4a")
 
-    def __init__(self, model: str = "large") -> None:
+    def __init__(self, model: str = "large", language: Optional[str] = None) -> None:
         if whisper is None:
             raise ImportError("openai-whisper is required for audio extraction")
         self.model_name = model
+        self.language = language
         self.whisper_model = whisper.load_model(model)
 
     def can_handle(self, source: str) -> bool:
@@ -32,7 +33,7 @@ class AudioExtractor(BaseExtractor):
 
         result = self.whisper_model.transcribe(
             str(audio_path),
-            language=kwargs.get("language"),
+            language=kwargs.get("language", self.language),
             verbose=False,
         )
 

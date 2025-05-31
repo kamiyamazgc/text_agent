@@ -33,11 +33,16 @@ class ProofreaderConfig(BaseModel):
         "issues in {style} style. Return only the corrected text."
     )
 
+class WhisperConfig(BaseModel):
+    model: str = "large"
+    language: Optional[str] = None
+
 class Config(BaseModel):
     pipeline: PipelineConfig = PipelineConfig()
     llm: LLMConfig = LLMConfig()
     translator: TranslatorConfig = TranslatorConfig()
     proofreader: ProofreaderConfig = ProofreaderConfig()
+    whisper: WhisperConfig = WhisperConfig()
     output_dir: Path = Path("output")
     temp_dir: Path = Path("temp")
     log_dir: Path = Path("logs")

@@ -5,6 +5,7 @@ from pathlib import Path
 sys.path.insert(0, os.path.abspath(os.path.join(os.path.dirname(__file__), "..", "..")))
 
 from docpipe.cli import _expand_sources  # noqa: E402
+from docpipe import cli as cli_module  # noqa: E402
 
 
 def test_expand_sources(tmp_path):
@@ -40,3 +41,48 @@ def test_expand_sources_urls_file(tmp_path):
         "https://example.com",
         "http://example.org/page",
     ]
+
+
+def test_cli_uses_whisper_model(monkeypatch):
+    called = {}
+
+    class DummyAE:
+        def __init__(self, model: str = "large", language=None):
+            called["model"] = model
+
+        def can_handle(self, source):
+            return False
+
+        def extract(self, source):
+            return {}
+
+    monkeypatch.setattr(cli_module, "AudioExtractor", DummyAE)
+    monkeypatch.setattr(cli_module, "_expand_sources", lambda s: [])
+
+    class Dummy:
+        def __init__(self, *a, **k):
+            pass
+
+        def process(self, text):
+            return {"text": text, "metadata": {}}
+
+    class DummyEval:
+        def __init__(self, *a, **k):
+            pass
+
+        def evaluate(self, text, reference=None):
+            return {"quality_score": 1.0}
+
+    monkeypatch.setattr(cli_module, "Preprocessor", Dummy)
+    monkeypatch.setattr(cli_module, "Translator", Dummy)
+    monkeypatch.setattr(cli_module, "Proofreader", Dummy)
+    monkeypatch.setattr(cli_module, "Fixer", Dummy)
+    monkeypatch.setattr(cli_module, "Evaluator", DummyEval)
+
+    cfg = cli_module.Config()
+    cfg.whisper.model = "custom"
+    monkeypatch.setattr(cli_module.Config, "load", classmethod(lambda cls, path=None: cfg))
+
+    cli_module.process.callback(["dummy"], None, None)
+
+    assert called["model"] == "custom"

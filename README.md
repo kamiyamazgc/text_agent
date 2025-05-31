@@ -51,6 +51,11 @@ Process multiple documents:
 python -m docpipe.cli process "doc1.pdf" "doc2.mp3" "https://youtube.com/watch?v=..."
 ```
 
+Process all files in a folder (non-recursive):
+```bash
+python -m docpipe.cli process path/to/folder/
+```
+
 Process with custom configuration (reads `config.yaml` automatically):
 ```bash
 python -m docpipe.cli process --output-dir output/ "input.pdf"

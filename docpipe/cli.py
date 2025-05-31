@@ -1,6 +1,20 @@
 import click
 from pathlib import Path
 from typing import List, Optional
+
+
+def _expand_sources(source_paths: List[str]) -> List[str]:
+    """Expand directory paths into contained file paths (non-recursive)."""
+    expanded: List[str] = []
+    for src in source_paths:
+        p = Path(src)
+        if p.is_dir():
+            for child in p.iterdir():
+                if child.is_file():
+                    expanded.append(str(child))
+        else:
+            expanded.append(src)
+    return expanded
 from .config import Config
 from .extractors.youtube import YouTubeExtractor
 from .extractors.pdf import PDFExtractor
@@ -29,10 +43,16 @@ def cli():
 @click.option("--config", "-c", type=click.Path(exists=True), help="Path to config file")
 @click.option("--output-dir", "-o", type=click.Path(), help="Output directory")
 def process(sources: List[str], config: Optional[str], output_dir: Optional[str]) -> None:
-    """Process one or more document sources"""
+    """Process one or more document sources.
+
+    Sources can be individual files, URLs, or directories. Directory paths are
+    expanded to all files within the directory (non-recursive).
+    """
     cfg = Config.load(config)
     if output_dir:
         cfg.output_dir = Path(output_dir)
+
+    sources = _expand_sources(list(sources))
     
     # Initialize extractors
     extractors = [

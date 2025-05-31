@@ -4,7 +4,7 @@ import types
 
 sys.path.insert(0, os.path.abspath(os.path.join(os.path.dirname(__file__), "..", "..")))
 
-from docpipe.extractors.web import WebExtractor
+from docpipe.extractors.web import WebExtractor  # noqa: E402
 
 
 def _dummy_trafilatura_module(fetch_returns="DUMMY", extract_returns="TEXT"):

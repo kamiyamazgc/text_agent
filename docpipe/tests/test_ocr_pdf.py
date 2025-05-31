@@ -5,7 +5,7 @@ import pytest
 
 sys.path.insert(0, os.path.abspath(os.path.join(os.path.dirname(__file__), "..", "..")))
 
-from docpipe.extractors.ocr_pdf import OCRPDFExtractor
+from docpipe.extractors.ocr_pdf import OCRPDFExtractor  # noqa: E402
 
 
 def test_can_handle_pdf():

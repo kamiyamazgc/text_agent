@@ -8,15 +8,15 @@ from docpipe.extractors.web import WebExtractor  # noqa: E402
 
 
 def _dummy_trafilatura_module(
-    fetch_returns="DUMMY", extract_returns="TEXT", meta_returns=None
+
+    fetch_returns: str = "DUMMY",
+    extract_returns: str = "TEXT",
+    meta_returns: dict | None = None,
 ):
-    metadata = types.SimpleNamespace(
-        extract_metadata=lambda html: meta_returns
-    )
     return types.SimpleNamespace(
         fetch_url=lambda url: fetch_returns,
         extract=lambda html, include_comments=False, include_tables=False: extract_returns,
-        metadata=metadata,
+        metadata=types.SimpleNamespace(extract_metadata=lambda html: meta_returns),
     )
 
 
@@ -27,9 +27,14 @@ def test_can_handle_web():
 
 
 def test_extract_success(monkeypatch):
+    dummy = _dummy_trafilatura_module()
     monkeypatch.setattr(
         "docpipe.extractors.web.trafilatura",
-        _dummy_trafilatura_module(),
+        dummy,
+    )
+    monkeypatch.setattr(
+        "docpipe.extractors.web.extract_metadata",
+        dummy.metadata.extract_metadata,
     )
     extractor = WebExtractor()
     result = extractor.extract("https://example.com")
@@ -38,9 +43,14 @@ def test_extract_success(monkeypatch):
 
 
 def test_extract_with_metadata(monkeypatch):
+    dummy = _dummy_trafilatura_module(meta_returns={"title": "Example"})
     monkeypatch.setattr(
         "docpipe.extractors.web.trafilatura",
-        _dummy_trafilatura_module(meta_returns={"title": "Example"}),
+        dummy,
+    )
+    monkeypatch.setattr(
+        "docpipe.extractors.web.extract_metadata",
+        dummy.metadata.extract_metadata,
     )
     extractor = WebExtractor()
     result = extractor.extract("https://example.com")

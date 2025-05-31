@@ -2,8 +2,10 @@ from typing import Dict, Any
 
 try:
     import trafilatura  # type: ignore
+    from trafilatura.metadata import extract_metadata  # type: ignore
 except Exception:  # pragma: no cover - optional dependency
     trafilatura = None  # type: ignore
+    extract_metadata = None  # type: ignore
 
 from .base import BaseExtractor
 
@@ -35,15 +37,11 @@ class WebExtractor(BaseExtractor):
             "url": source,
         }
 
-        meta_module = getattr(trafilatura, "metadata", None)
-        if meta_module and hasattr(meta_module, "extract_metadata"):
-            try:
-                extracted = meta_module.extract_metadata(downloaded)
-                if extracted:
-                    metadata.update(
-                        {k: v for k, v in extracted.items() if v is not None}
-                    )
-            except Exception:  # pragma: no cover - ignore metadata failures
-                pass
+        if extract_metadata is not None:
+            meta = extract_metadata(downloaded)
+            if meta:
+                for key, value in meta.items():
+                    if value:
+                        metadata[key] = value
 
         return {"text": text, "metadata": metadata}

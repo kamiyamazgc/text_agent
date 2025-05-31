@@ -208,4 +208,4 @@ agents:
 2. **Collaborative Processing**:
    - Agent knowledge sharing
    - Cross-agent optimization
-   - Distributed processing 
+   - Distributed processing

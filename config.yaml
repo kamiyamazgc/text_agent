@@ -21,6 +21,10 @@ proofreader:
   temperature: 0.0
   prompt: "Proofread the following text. Fix grammar, style, and readability issues in {style} style. Return only the corrected text."
 
+whisper:
+  model: "large"
+  language:
+
 output_dir: "output"
 temp_dir: "temp"
 log_dir: "logs"

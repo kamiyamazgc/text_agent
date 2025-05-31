@@ -86,3 +86,28 @@ def test_proofreader_default_values():
     assert "{style}" in cfg.proofreader.prompt
 
 
+def test_whisper_config_loaded(tmp_path):
+    pytest.importorskip("yaml")
+    cfg_file = tmp_path / "config.yaml"
+    cfg_file.write_text(
+        "whisper:\n  model: tiny\n  language: en\n",
+        encoding="utf-8",
+    )
+
+    cwd = os.getcwd()
+    os.chdir(tmp_path)
+    try:
+        cfg = Config.load()
+    finally:
+        os.chdir(cwd)
+
+    assert cfg.whisper.model == "tiny"
+    assert cfg.whisper.language == "en"
+
+
+def test_whisper_default_values():
+    cfg = Config()
+    assert cfg.whisper.model == "large"
+    assert cfg.whisper.language is None
+
+

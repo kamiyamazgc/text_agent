@@ -24,3 +24,19 @@ def test_expand_sources(tmp_path):
     assert str(file2) in expanded
     # subdirectory files should not be included
     assert str(sub / "c.txt") not in expanded
+
+
+def test_expand_sources_urls_file(tmp_path):
+    urls_file = tmp_path / "urls.txt"
+    urls_file.write_text(
+        "https://example.com\nnot-a-url\nhttp://example.org/page\n",
+        encoding="utf-8",
+    )
+
+    sources = [str(urls_file)]
+    expanded = _expand_sources(sources)
+
+    assert expanded == [
+        "https://example.com",
+        "http://example.org/page",
+    ]

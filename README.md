@@ -56,6 +56,13 @@ Process all files in a folder (non-recursive):
 python -m docpipe.cli process path/to/folder/
 ```
 
+Process URLs listed in `urls.txt`:
+```bash
+python -m docpipe.cli process urls.txt
+```
+Each line of `urls.txt` should contain a web page URL. Lines that do not start
+with `http://` or `https://` are ignored.
+
 Process with custom configuration (reads `config.yaml` automatically):
 ```bash
 python -m docpipe.cli process --output-dir output/ "input.pdf"

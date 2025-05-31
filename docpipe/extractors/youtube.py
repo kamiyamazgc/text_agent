@@ -43,18 +43,33 @@ class YouTubeExtractor(BaseExtractor):
         """Download auto-generated captions"""
         if yt_dlp is None:
             raise ImportError("yt_dlp is required for YouTube extraction")
+        try:
+            with yt_dlp.YoutubeDL({'skip_download': True}) as ydl:
+                info = ydl.extract_info(
+                    f'https://www.youtube.com/watch?v={video_id}', download=False
+                )
+        except Exception as e:  # pragma: no cover - passthrough errors
+            print(f"Failed to fetch video info: {e}")
+            return None
+
+        auto_caps = info.get('automatic_captions') or {}
+        if not auto_caps:
+            return None
+
+        lang = next(iter(auto_caps))
+
         ydl_opts = {
             'writesubtitles': True,
             'writeautomaticsub': True,
-            'subtitleslangs': ['ja'],
+            'subtitleslangs': [lang],
             'skip_download': True,
             'outtmpl': str(self.temp_dir / f'{video_id}.%(ext)s')
         }
-        
+
         try:
             with yt_dlp.YoutubeDL(ydl_opts) as ydl:
                 ydl.download([f'https://www.youtube.com/watch?v={video_id}'])
-                caption_file = self.temp_dir / f'{video_id}.ja.vtt'
+                caption_file = self.temp_dir / f'{video_id}.{lang}.vtt'
                 if caption_file.exists():
                     return caption_file.read_text(encoding='utf-8')
         except Exception as e:

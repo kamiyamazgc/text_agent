@@ -8,6 +8,7 @@ from docpipe.extractors.web import WebExtractor  # noqa: E402
 
 
 def _dummy_trafilatura_module(
+
     fetch_returns: str = "DUMMY",
     extract_returns: str = "TEXT",
     meta_returns: dict | None = None,

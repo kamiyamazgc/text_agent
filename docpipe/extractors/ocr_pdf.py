@@ -1,5 +1,5 @@
 from pathlib import Path
-from typing import Dict, Any
+from typing import Any, Dict
 
 try:
     import marker_ocr_pdf  # type: ignore
@@ -16,8 +16,8 @@ class OCRPDFExtractor(BaseExtractor):
         """Check if the source is a PDF file"""
         return source.lower().endswith(".pdf")
 
-    def extract(self, source: str, **kwargs) -> Dict[str, Any]:
-        """Extract text from a scanned PDF via OCR"""
+    def extract(self, source: str, **kwargs: Any) -> Dict[str, Any]:
+        """Extract text from a scanned PDF via OCR, returning confidence."""
         pdf_path = Path(source)
         if not pdf_path.exists():
             raise FileNotFoundError(f"PDF not found: {source}")
@@ -26,7 +26,11 @@ class OCRPDFExtractor(BaseExtractor):
             raise ImportError("marker_ocr_pdf is required for OCR PDF extraction")
 
         try:
-            text = marker_ocr_pdf.to_text(pdf_path)
+            if hasattr(marker_ocr_pdf, "to_text_with_confidence"):
+                text, confidence = marker_ocr_pdf.to_text_with_confidence(pdf_path)
+            else:
+                confidence = None
+                text = marker_ocr_pdf.to_text(pdf_path)
         except Exception as e:  # pragma: no cover - passthrough any extraction errors
             raise RuntimeError(f"Failed to OCR PDF: {e}")
 
@@ -34,4 +38,6 @@ class OCRPDFExtractor(BaseExtractor):
             "source_type": "ocr_pdf",
             "file_name": pdf_path.name,
         }
+        if confidence is not None:
+            metadata["confidence"] = confidence
         return {"text": text, "metadata": metadata}

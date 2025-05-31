@@ -60,7 +60,35 @@ def process(sources: List[str], config: Optional[str], output_dir: Optional[str]
             continue
 
         # Preprocess text
-        result["text"] = preprocessor.process(result["text"])
+        text = preprocessor.process(result["text"])
+
+        # Run processing pipeline with quality control
+        pipeline_result = process_text(
+            text,
+            cfg.pipeline,
+            translator,
+            proofreader,
+            evaluator,
+            fixer,
+        )
+        result["text"] = pipeline_result["text"]
+        result["metadata"].update(pipeline_result["metadata"])
+
+        # Translate to Japanese if needed
+        if result["metadata"].get("needs_translation", True):
+            trans_result = translator.process(result["text"])
+            result["text"] = trans_result["text"]
+            result["metadata"].update(trans_result["metadata"])
+
+        # Translate to Japanese
+        trans_result = translator.process(result["text"])
+        result["text"] = trans_result["text"]
+        result["metadata"].update(trans_result["metadata"])
+
+        # Translate to Japanese
+        trans_result = translator.process(result["text"])
+        result["text"] = trans_result["text"]
+        result["metadata"].update(trans_result["metadata"])
 
         # Translate to Japanese
         trans_result = translator.process(result["text"])

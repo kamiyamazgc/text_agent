@@ -36,10 +36,12 @@ class WebExtractor(BaseExtractor):
             "source_type": "web",
             "url": source,
         }
+
         if extract_metadata is not None:
             meta = extract_metadata(downloaded)
             if meta:
                 for key, value in meta.items():
                     if value:
                         metadata[key] = value
+
         return {"text": text, "metadata": metadata}

@@ -51,10 +51,11 @@ Process multiple documents:
 python -m docpipe.cli process "doc1.pdf" "doc2.mp3" "https://youtube.com/watch?v=..."
 ```
 
-Process with custom configuration:
+Process with custom configuration (reads `config.yaml` automatically):
 ```bash
-python -m docpipe.cli process --config config.yaml --output-dir output/ "input.pdf"
+python -m docpipe.cli process --output-dir output/ "input.pdf"
 ```
+You can specify a different file with `--config path/to/file.yaml`.
 
 ### Configuration
 
@@ -77,6 +78,7 @@ output_dir: "output"
 temp_dir: "temp"
 log_dir: "logs"
 ```
+This file will be loaded automatically when running the CLI from the same directory.
 
 ## Development
 

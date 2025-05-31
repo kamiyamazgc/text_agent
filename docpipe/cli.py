@@ -74,7 +74,12 @@ def process(sources: List[str], config: Optional[str], output_dir: Optional[str]
         cfg.translator.temperature,
         cfg.translator.prompt,
     )
-    proofreader = Proofreader()
+    proofreader = Proofreader(
+        cfg.proofreader.model,
+        cfg.proofreader.style,
+        cfg.proofreader.temperature,
+        cfg.proofreader.prompt,
+    )
     evaluator = Evaluator()
     fixer = Fixer()
     

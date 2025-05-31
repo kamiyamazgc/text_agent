@@ -24,10 +24,20 @@ class TranslatorConfig(BaseModel):
     temperature: float = 0.7
     prompt: str = "Translate the following text to {target_lang}:\n{text}"
 
+class ProofreaderConfig(BaseModel):
+    model: str = "gpt-4o"
+    style: str = "general"
+    temperature: float = 0.0
+    prompt: str = (
+        "Proofread the following text. Fix grammar, style, and readability "
+        "issues in {style} style. Return only the corrected text."
+    )
+
 class Config(BaseModel):
     pipeline: PipelineConfig = PipelineConfig()
     llm: LLMConfig = LLMConfig()
     translator: TranslatorConfig = TranslatorConfig()
+    proofreader: ProofreaderConfig = ProofreaderConfig()
     output_dir: Path = Path("output")
     temp_dir: Path = Path("temp")
     log_dir: Path = Path("logs")

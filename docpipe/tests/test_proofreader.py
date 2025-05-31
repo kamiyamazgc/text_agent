@@ -17,6 +17,16 @@ def _dummy_openai_module(result: str = ""):
     return types.SimpleNamespace(ChatCompletion=DummyChatCompletion)
 
 
+def _capture_openai_module(store: dict):
+    class DummyChatCompletion:
+        @staticmethod
+        def create(model, messages, temperature=0.0):
+            store["prompt"] = messages[0]["content"]
+            return {"choices": [{"message": {"content": "ok"}}]}
+
+    return types.SimpleNamespace(ChatCompletion=DummyChatCompletion)
+
+
 def test_proofread_no_errors(monkeypatch):
     monkeypatch.setattr(
         "docpipe.processors.proofreader.openai", _dummy_openai_module("This is fine.")
@@ -36,3 +46,14 @@ def test_proofread_correction(monkeypatch):
     result = pf.process("This is a mistkae.")
     assert result["text"] == "This is a mistake."
     assert result["quality_score"] < 1.0
+
+
+def test_custom_prompt(monkeypatch):
+    store = {}
+    monkeypatch.setattr(
+        "docpipe.processors.proofreader.openai",
+        _capture_openai_module(store),
+    )
+    pf = Proofreader(prompt="P {style}")
+    pf.proofread("x")
+    assert store["prompt"] == "P general"

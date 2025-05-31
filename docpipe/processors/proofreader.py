@@ -10,21 +10,25 @@ class Proofreader:
     """Grammar and style proofreader using OpenAI ChatCompletion."""
 
     def __init__(
-        self, model: str = "gpt-4o", style: str = "general", temperature: float = 0.0
-
+        self,
+        model: str = "gpt-4o",
+        style: str = "general",
+        temperature: float = 0.0,
+        prompt: str = (
+            "Proofread the following text. Fix grammar, style, and readability "
+            "issues in {style} style. Return only the corrected text."
+        ),
     ) -> None:
         if openai is None:
             raise ImportError("openai is required for Proofreader")
         self.model = model
         self.style = style
         self.temperature = temperature
+        self.prompt = prompt
 
     def proofread(self, text: str) -> str:
         """Return text corrected by ChatGPT."""
-        prompt = (
-            "Proofread the following text. Fix grammar, style, and readability "
-            f"issues in {self.style} style. Return only the corrected text."
-        )
+        prompt = self.prompt.format(style=self.style)
         resp = openai.ChatCompletion.create(
             model=self.model,
             messages=[

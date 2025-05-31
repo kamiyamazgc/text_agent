@@ -5,7 +5,7 @@ A unified document conversion framework that transforms various input sources in
 ## Features
 
 - Support for multiple input formats:
-  - PDF (digital and scanned)
+  - PDF (digital) and scanned PDFs via OCR
   - Audio files (MP3, WAV, M4A)
   - Web pages
   - YouTube videos (with automatic caption extraction)

@@ -4,6 +4,7 @@ from typing import List
 from .config import Config
 from .extractors.youtube import YouTubeExtractor
 from .extractors.pdf import PDFExtractor
+from .extractors.ocr_pdf import OCRPDFExtractor
 import json
 
 @click.group()
@@ -26,36 +27,40 @@ def process(sources: List[str], config: str, output_dir: str):
     extractors = [
         YouTubeExtractor(cfg.temp_dir),
         PDFExtractor(),
+        OCRPDFExtractor(),
         # TODO: Add other extractors
     ]
     
     # Process each source
     for source in sources:
         click.echo(f"Processing: {source}")
-        
-        # Find appropriate extractor
-        extractor = next((e for e in extractors if e.can_handle(source)), None)
-        if not extractor:
-            click.echo(f"Error: No extractor found for {source}", err=True)
+
+        # Try all extractors that claim they can handle the source
+        result = None
+        for extractor in [e for e in extractors if e.can_handle(source)]:
+            try:
+                result = extractor.extract(source)
+                break
+            except Exception as e:  # pragma: no cover - passthrough errors
+                click.echo(
+                    f"Extractor {extractor.__class__.__name__} failed: {e}",
+                    err=True,
+                )
+
+        if result is None:
+            click.echo(f"Error: No extractor succeeded for {source}", err=True)
             continue
-        
-        try:
-            # Extract content
-            result = extractor.extract(source)
-            
-            # Save output
-            output_file = cfg.output_dir / f"doc_{hash(source)}__{source.split('/')[-1]}.txt"
-            output_file.parent.mkdir(parents=True, exist_ok=True)
-            output_file.write_text(result['text'], encoding='utf-8')
-            
-            # Save metadata
-            meta_file = output_file.with_suffix('.json')
-            meta_file.write_text(json.dumps(result['metadata'], indent=2), encoding='utf-8')
-            
-            click.echo(f"Successfully processed: {output_file}")
-            
-        except Exception as e:
-            click.echo(f"Error processing {source}: {str(e)}", err=True)
+
+        # Save output
+        output_file = cfg.output_dir / f"doc_{hash(source)}__{source.split('/')[-1]}.txt"
+        output_file.parent.mkdir(parents=True, exist_ok=True)
+        output_file.write_text(result['text'], encoding='utf-8')
+
+        # Save metadata
+        meta_file = output_file.with_suffix('.json')
+        meta_file.write_text(json.dumps(result['metadata'], indent=2), encoding='utf-8')
+
+        click.echo(f"Successfully processed: {output_file}")
 
 if __name__ == '__main__':
     cli() 

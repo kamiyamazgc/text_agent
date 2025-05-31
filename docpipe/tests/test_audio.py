@@ -5,7 +5,7 @@ import pytest
 
 sys.path.insert(0, os.path.abspath(os.path.join(os.path.dirname(__file__), "..", "..")))
 
-from docpipe.extractors.audio import AudioExtractor
+from docpipe.extractors.audio import AudioExtractor  # noqa: E402
 
 
 def _dummy_whisper_module():
@@ -13,9 +13,7 @@ def _dummy_whisper_module():
         def transcribe(path, language=None, verbose=False):
             return {
                 "text": "hello world",
-                "segments": [
-                    {"start": 0.0, "end": 1.0, "text": "hello world"}
-                ],
+                "segments": [{"start": 0.0, "end": 1.0, "text": "hello world"}],
             }
 
         return types.SimpleNamespace(transcribe=transcribe)

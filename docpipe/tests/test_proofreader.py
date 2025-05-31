@@ -4,7 +4,7 @@ import types
 
 sys.path.insert(0, os.path.abspath(os.path.join(os.path.dirname(__file__), "..", "..")))
 
-from docpipe.processors.proofreader import Proofreader
+from docpipe.processors.proofreader import Proofreader  # noqa: E402
 
 
 def _dummy_language_tool_module():
@@ -25,7 +25,9 @@ def _dummy_language_tool_module():
 
 
 def test_proofread_no_errors(monkeypatch):
-    monkeypatch.setattr("docpipe.processors.proofreader.lt", _dummy_language_tool_module())
+    monkeypatch.setattr(
+        "docpipe.processors.proofreader.lt", _dummy_language_tool_module()
+    )
     pf = Proofreader()
     result = pf.process("This is fine.")
     assert result["text"] == "This is fine."
@@ -33,7 +35,9 @@ def test_proofread_no_errors(monkeypatch):
 
 
 def test_proofread_correction(monkeypatch):
-    monkeypatch.setattr("docpipe.processors.proofreader.lt", _dummy_language_tool_module())
+    monkeypatch.setattr(
+        "docpipe.processors.proofreader.lt", _dummy_language_tool_module()
+    )
     pf = Proofreader()
     result = pf.process("This is a mistkae.")
     assert result["text"] == "This is a mistake."

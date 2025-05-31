@@ -1,4 +1,6 @@
-import os, textwrap, tiktoken, openai
+import os
+import tiktoken
+import openai
 
 class GPT4OMiniTranslator:
     """
@@ -46,3 +48,4 @@ class GPT4OMiniTranslator:
             out.append(resp.choices[0].message.content.strip())
         print("✓ done")
         return "\n".join(out)
+

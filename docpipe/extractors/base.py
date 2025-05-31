@@ -1,6 +1,5 @@
 from abc import ABC, abstractmethod
-from typing import Dict, Any, Optional
-from pathlib import Path
+from typing import Dict, Any
 
 class BaseExtractor(ABC):
     """Base class for all document extractors"""

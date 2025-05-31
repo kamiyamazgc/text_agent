@@ -76,6 +76,16 @@ def process(sources: List[str], config: Optional[str], output_dir: Optional[str]
         result["text"] = pipeline_result["text"]
         result["metadata"].update(pipeline_result["metadata"])
 
+        # Translate to Japanese
+        trans_result = translator.process(result["text"])
+        result["text"] = trans_result["text"]
+        result["metadata"].update(trans_result["metadata"])
+
+        # Proofread text
+        pf_result = proofreader.process(result["text"])
+        result["text"] = pf_result["text"]
+        result["metadata"]["quality_score"] = pf_result["quality_score"]
+
         # Save output
         digest = hashlib.sha1(source.encode("utf-8")).hexdigest()[:8]
         slug = re.sub(r"[^a-zA-Z0-9_-]", "_", source.split("/")[-1])

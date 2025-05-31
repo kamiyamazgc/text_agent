@@ -7,7 +7,14 @@ from .extractors.pdf import PDFExtractor
 from .extractors.ocr_pdf import OCRPDFExtractor
 from .extractors.web import WebExtractor
 from .extractors.audio import AudioExtractor
-from .processors import Preprocessor
+from .processors import (
+    Preprocessor,
+    Translator,
+    Proofreader,
+    Evaluator,
+    Fixer,
+)
+from .pipeline import process_text
 import json
 import hashlib
 import re
@@ -37,6 +44,10 @@ def process(sources: List[str], config: Optional[str], output_dir: Optional[str]
         # TODO: Add other extractors
     ]
     preprocessor = Preprocessor()
+    translator = Translator(cfg.llm.model, cfg.llm.temperature)
+    proofreader = Proofreader()
+    evaluator = Evaluator()
+    fixer = Fixer()
     
     # Process each source
     for source in sources:
@@ -59,7 +70,19 @@ def process(sources: List[str], config: Optional[str], output_dir: Optional[str]
             continue
 
         # Preprocess text
-        result["text"] = preprocessor.process(result["text"])
+        text = preprocessor.process(result["text"])
+
+        # Run processing pipeline with quality control
+        pipeline_result = process_text(
+            text,
+            cfg.pipeline,
+            translator,
+            proofreader,
+            evaluator,
+            fixer,
+        )
+        result["text"] = pipeline_result["text"]
+        result["metadata"].update(pipeline_result["metadata"])
 
         # Save output
         digest = hashlib.sha1(source.encode("utf-8")).hexdigest()[:8]

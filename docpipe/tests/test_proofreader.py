@@ -7,26 +7,18 @@ sys.path.insert(0, os.path.abspath(os.path.join(os.path.dirname(__file__), "..",
 from docpipe.processors.proofreader import Proofreader  # noqa: E402
 
 
-def _dummy_language_tool_module():
-    class DummyTool:
-        def __init__(self, language: str = "ja-JP") -> None:
-            pass
+def _dummy_openai_module(result: str = "修正後"):
+    class DummyChatCompletion:
+        @staticmethod
+        def create(model, messages, temperature=0.0):
+            return {"choices": [{"message": {"content": result}}]}
 
-        def check(self, text: str):
-            if "mistkae" in text:
-                return [object()]
-            return []
-
-    def correct(text: str, matches) -> str:
-        return text.replace("mistkae", "mistake")
-
-    utils = types.SimpleNamespace(correct=correct)
-    return types.SimpleNamespace(LanguageTool=DummyTool, utils=utils)
+    return types.SimpleNamespace(ChatCompletion=DummyChatCompletion)
 
 
 def test_proofread_no_errors(monkeypatch):
     monkeypatch.setattr(
-        "docpipe.processors.proofreader.lt", _dummy_language_tool_module()
+        "docpipe.processors.proofreader.openai", _dummy_openai_module("This is fine.")
     )
     pf = Proofreader()
     result = pf.process("This is fine.")
@@ -36,7 +28,8 @@ def test_proofread_no_errors(monkeypatch):
 
 def test_proofread_correction(monkeypatch):
     monkeypatch.setattr(
-        "docpipe.processors.proofreader.lt", _dummy_language_tool_module()
+        "docpipe.processors.proofreader.openai",
+        _dummy_openai_module("This is a mistake."),
     )
     pf = Proofreader()
     result = pf.process("This is a mistkae.")

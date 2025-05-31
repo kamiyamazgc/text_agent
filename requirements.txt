@@ -4,6 +4,7 @@ yt-dlp>=2023.12.30
 openai-whisper>=20231117
 trafilatura>=1.6.1
 marker-pdf>=0.1.0
+marker-ocr-pdf>=0.1.0
 language-tool-python>=2.7.1
 sacrebleu>=2.3.1
 pytest>=7.4.0

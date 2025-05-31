@@ -4,6 +4,7 @@ pydantic>=2.5.0        # 設定クラス／スキーマで使用
 python-dotenv>=1.0.0   # env 読み込みユーティリティ
 fastapi>=0.104.0       # API レイヤ（軽量なのでそのまま）
 uvicorn>=0.24.0        # ASGI サーバ（テスト起動用）
+marker-ocr-pdf>=0.1.0  # OCR PDF extraction
 
 # --- Testing / 静的解析 ---
 pytest>=7.4.0

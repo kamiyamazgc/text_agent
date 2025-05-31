@@ -1,6 +1,7 @@
 import os
 import sys
 import types
+import pytest
 
 sys.path.insert(0, os.path.abspath(os.path.join(os.path.dirname(__file__), "..", "..")))
 
@@ -60,12 +61,8 @@ def test_extract_with_metadata(monkeypatch):
 def test_extract_missing_dependency(monkeypatch):
     monkeypatch.setattr("docpipe.extractors.web.trafilatura", None)
     extractor = WebExtractor()
-    try:
+    with pytest.raises(ImportError):
         extractor.extract("https://example.com")
-    except ImportError:
-        assert True
-    else:
-        assert False, "ImportError not raised"
 
 
 def test_extract_fetch_failure(monkeypatch):
@@ -74,9 +71,5 @@ def test_extract_fetch_failure(monkeypatch):
         _dummy_trafilatura_module(fetch_returns=None),
     )
     extractor = WebExtractor()
-    try:
+    with pytest.raises(RuntimeError):
         extractor.extract("https://example.com")
-    except RuntimeError:
-        assert True
-    else:
-        assert False, "RuntimeError not raised"

@@ -90,6 +90,35 @@ output_dir: "output"
 temp_dir: "temp"
 log_dir: "logs"
 ```
+The available keys are shown below. Any field omitted will fall back to the
+defaults defined in `docpipe.config.Config`.
+
+* `pipeline` &ndash; Parameters that control quality checking and retries
+  * `quality_threshold` &ndash; minimum quality score to stop retrying
+  * `max_retries` &ndash; maximum number of retry attempts
+  * `min_improvement` &ndash; minimum improvement required to continue retrying
+  * `language_tool_threshold` &ndash; maximum grammar error rate
+  * `bleu_threshold` &ndash; minimum BLEU score for translations
+* `llm` &ndash; Shared settings for LLM access
+  * `profile` &ndash; API profile (`default` or `local`)
+  * `model` &ndash; model name
+  * `temperature` &ndash; sampling temperature
+* `translator` &ndash; Settings used in the translation step
+  * `model` &ndash; model name
+  * `temperature` &ndash; sampling temperature
+  * `prompt` &ndash; custom translation prompt
+* `proofreader` &ndash; Settings for the proofreader step
+  * `model` &ndash; model name
+  * `style` &ndash; proofreading style
+  * `temperature` &ndash; sampling temperature
+  * `prompt` &ndash; custom proofreading prompt
+* `whisper` &ndash; Options for audio transcription
+  * `model` &ndash; Whisper model name
+  * `language` &ndash; force transcription language (optional)
+* `output_dir` &ndash; directory for processed text
+* `temp_dir` &ndash; directory for temporary files
+* `log_dir` &ndash; directory for logs
+
 This file will be loaded automatically when running the CLI from the same directory.
 
 #### Configuration Precedence

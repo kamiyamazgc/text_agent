@@ -33,6 +33,8 @@ def test_extract_with_captions(monkeypatch, tmp_path):
     result = extractor.extract("https://youtube.com/watch?v=abc123")
     assert result["text"] == "CAPTION TEXT"
     assert result["metadata"]["caption_used"]
+    assert result["metadata"]["language"] == "en"
+    assert result["metadata"]["needs_translation"]
 
 
 def test_extract_with_audio(monkeypatch, tmp_path):
@@ -46,3 +48,15 @@ def test_extract_with_audio(monkeypatch, tmp_path):
     result = extractor.extract("https://youtube.com/watch?v=abc123")
     assert result["text"] == "AUDIO TEXT"
     assert not result["metadata"]["caption_used"]
+    assert result["metadata"]["language"] == "en"
+    assert result["metadata"]["needs_translation"]
+
+
+def test_extract_japanese_caption(monkeypatch, tmp_path):
+    extractor = YouTubeExtractor(tmp_path)
+    monkeypatch.setattr(extractor, "_get_video_id", lambda url: "abc123")
+    monkeypatch.setattr(extractor, "_download_captions", lambda vid: "これは日本語です")
+    monkeypatch.setattr(extractor, "_download_audio", lambda vid: None)
+    result = extractor.extract("https://youtu.be/abc123")
+    assert result["metadata"]["language"] == "ja"
+    assert not result["metadata"]["needs_translation"]

@@ -6,6 +6,8 @@ from .extractors.youtube import YouTubeExtractor
 from .extractors.pdf import PDFExtractor
 from .extractors.ocr_pdf import OCRPDFExtractor
 import json
+import hashlib
+import re
 
 @click.group()
 def cli():
@@ -52,7 +54,9 @@ def process(sources: List[str], config: str, output_dir: str):
             continue
 
         # Save output
-        output_file = cfg.output_dir / f"doc_{hash(source)}__{source.split('/')[-1]}.txt"
+        digest = hashlib.sha1(source.encode("utf-8")).hexdigest()[:8]
+        slug = re.sub(r"[^a-zA-Z0-9_-]", "_", source.split("/")[-1])
+        output_file = cfg.output_dir / f"doc_{digest}__{slug}.txt"
         output_file.parent.mkdir(parents=True, exist_ok=True)
         output_file.write_text(result['text'], encoding='utf-8')
 

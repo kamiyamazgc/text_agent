@@ -1,6 +1,6 @@
 import click
 from pathlib import Path
-from typing import List
+from typing import List, Optional
 from .config import Config
 from .extractors.youtube import YouTubeExtractor
 from .extractors.pdf import PDFExtractor
@@ -20,7 +20,7 @@ def cli():
 @click.argument('sources', nargs=-1, required=True)
 @click.option('--config', '-c', type=click.Path(exists=True), help='Path to config file')
 @click.option('--output-dir', '-o', type=click.Path(), help='Output directory')
-def process(sources: List[str], config: str, output_dir: str):
+def process(sources: List[str], config: Optional[str], output_dir: Optional[str]) -> None:
     """Process one or more document sources"""
     # Load config
     cfg = Config.from_yaml(config) if config else Config()

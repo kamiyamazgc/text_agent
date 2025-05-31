@@ -1,6 +1,7 @@
 import os
 import sys
 import types
+import pytest
 
 sys.path.insert(0, os.path.abspath(os.path.join(os.path.dirname(__file__), "..", "..")))
 
@@ -32,12 +33,8 @@ def test_can_handle_audio(monkeypatch):
 def test_extract_file_not_found(monkeypatch):
     monkeypatch.setattr("docpipe.extractors.audio.whisper", _dummy_whisper_module())
     extractor = AudioExtractor()
-    try:
+    with pytest.raises(FileNotFoundError):
         extractor.extract("missing.mp3")
-    except FileNotFoundError:
-        assert True
-    else:
-        assert False, "FileNotFoundError not raised"
 
 
 def test_extract_success(tmp_path, monkeypatch):

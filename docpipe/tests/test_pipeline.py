@@ -4,6 +4,7 @@ import sys
 sys.path.insert(0, os.path.abspath(os.path.join(os.path.dirname(__file__), "..", "..")))
 
 from docpipe.pipeline import process_text  # noqa: E402
+
 from docpipe.config import PipelineConfig  # noqa: E402
 
 

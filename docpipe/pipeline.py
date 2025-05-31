@@ -6,6 +6,7 @@ from .processors import Translator, Proofreader, Evaluator, Fixer
 
 def process_text(
     text: str,
+
     cfg: PipelineConfig,
     translator: Translator,
     proofreader: Proofreader,
@@ -41,8 +42,10 @@ def process_text(
 
         fix_result = fixer.process(text)
         text = fix_result["text"]
+
         prev_quality = quality
         retries += 1
 
     metadata["retries"] = retries
+
     return {"text": text, "metadata": metadata}

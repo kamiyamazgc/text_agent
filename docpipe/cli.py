@@ -7,7 +7,7 @@ from .extractors.pdf import PDFExtractor
 from .extractors.ocr_pdf import OCRPDFExtractor
 from .extractors.web import WebExtractor
 from .extractors.audio import AudioExtractor
-from .processors import Preprocessor
+from .processors import Preprocessor, Translator
 import json
 import hashlib
 import re
@@ -37,6 +37,7 @@ def process(sources: List[str], config: Optional[str], output_dir: Optional[str]
         # TODO: Add other extractors
     ]
     preprocessor = Preprocessor()
+    translator = Translator(cfg.llm.model, cfg.llm.temperature)
     
     # Process each source
     for source in sources:
@@ -60,6 +61,12 @@ def process(sources: List[str], config: Optional[str], output_dir: Optional[str]
 
         # Preprocess text
         result["text"] = preprocessor.process(result["text"])
+
+        # Translate to Japanese if needed
+        if result["metadata"].get("needs_translation", True):
+            trans_result = translator.process(result["text"])
+            result["text"] = trans_result["text"]
+            result["metadata"].update(trans_result["metadata"])
 
         # Save output
         digest = hashlib.sha1(source.encode("utf-8")).hexdigest()[:8]

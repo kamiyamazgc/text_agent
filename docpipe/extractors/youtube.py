@@ -8,6 +8,13 @@ except Exception:  # pragma: no cover - optional dependency
 from .base import BaseExtractor
 from .audio import AudioExtractor
 
+LANGUAGE_PATTERN = re.compile(r"[\u3040-\u30ff\u4e00-\u9fff]")
+
+
+def _detect_language(text: str) -> str:
+    """Return 'ja' if Japanese characters are present else 'en'."""
+    return "ja" if LANGUAGE_PATTERN.search(text) else "en"
+
 class YouTubeExtractor(BaseExtractor):
     """Extractor for YouTube videos using captions or audio transcription"""
     
@@ -88,6 +95,9 @@ class YouTubeExtractor(BaseExtractor):
         text = self._download_captions(video_id)
         if text:
             metadata['caption_used'] = True
+            language = _detect_language(text)
+            metadata['language'] = language
+            metadata['needs_translation'] = language != 'ja'
             return {
                 'text': text,
                 'metadata': metadata
@@ -103,6 +113,9 @@ class YouTubeExtractor(BaseExtractor):
 
             metadata['audio_file'] = audio_result['metadata'].get('file_name')
             metadata['audio_model'] = audio_result['metadata'].get('model')
+            language = _detect_language(audio_result['text'])
+            metadata['language'] = language
+            metadata['needs_translation'] = language != 'ja'
             return {
                 'text': audio_result['text'],
                 'metadata': metadata

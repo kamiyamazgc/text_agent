@@ -10,11 +10,17 @@ from typing import Any, Dict
 class Translator:
     """Simple translator using OpenAI ChatCompletion."""
 
-    def __init__(self, model: str = "gpt-4", temperature: float = 0.7) -> None:
+    def __init__(
+        self,
+        model: str = "gpt-4",
+        temperature: float = 0.7,
+        prompt: str = "Translate the following text to {target_lang}:\n{text}",
+    ) -> None:
         if openai is None:
             raise ImportError("openai is required for Translator")
         self.model = model
         self.temperature = temperature
+        self.prompt = prompt
 
     def detect_language(self, text: str) -> str:
         """Very naive language detection."""
@@ -26,7 +32,7 @@ class Translator:
         """Translate text to the target language using ChatCompletion."""
         if target_lang == self.detect_language(text):
             return text
-        prompt = f"Translate the following text to {target_lang}:\n" + text
+        prompt = self.prompt.format(target_lang=target_lang, text=text)
         resp = openai.ChatCompletion.create(
             model=self.model,
             messages=[{"role": "user", "content": prompt}],

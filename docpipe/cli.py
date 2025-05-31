@@ -69,7 +69,11 @@ def process(sources: List[str], config: Optional[str], output_dir: Optional[str]
         # TODO: Add other extractors
     ]
     preprocessor = Preprocessor()
-    translator = Translator(cfg.llm.model, cfg.llm.temperature)
+    translator = Translator(
+        cfg.translator.model,
+        cfg.translator.temperature,
+        cfg.translator.prompt,
+    )
     proofreader = Proofreader()
     evaluator = Evaluator()
     fixer = Fixer()

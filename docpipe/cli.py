@@ -7,7 +7,14 @@ from .extractors.pdf import PDFExtractor
 from .extractors.ocr_pdf import OCRPDFExtractor
 from .extractors.web import WebExtractor
 from .extractors.audio import AudioExtractor
-from .processors import Preprocessor, Translator
+from .processors import (
+    Preprocessor,
+    Translator,
+    Proofreader,
+    Evaluator,
+    Fixer,
+)
+from .pipeline import process_text
 import json
 import hashlib
 import re
@@ -38,6 +45,9 @@ def process(sources: List[str], config: Optional[str], output_dir: Optional[str]
     ]
     preprocessor = Preprocessor()
     translator = Translator(cfg.llm.model, cfg.llm.temperature)
+    proofreader = Proofreader()
+    evaluator = Evaluator()
+    fixer = Fixer()
     
     # Process each source
     for source in sources:
@@ -73,27 +83,6 @@ def process(sources: List[str], config: Optional[str], output_dir: Optional[str]
         )
         result["text"] = pipeline_result["text"]
         result["metadata"].update(pipeline_result["metadata"])
-
-        # Translate to Japanese if needed
-        if result["metadata"].get("needs_translation", True):
-            trans_result = translator.process(result["text"])
-            result["text"] = trans_result["text"]
-            result["metadata"].update(trans_result["metadata"])
-
-        # Translate to Japanese
-        trans_result = translator.process(result["text"])
-        result["text"] = trans_result["text"]
-        result["metadata"].update(trans_result["metadata"])
-
-        # Translate to Japanese
-        trans_result = translator.process(result["text"])
-        result["text"] = trans_result["text"]
-        result["metadata"].update(trans_result["metadata"])
-
-        # Translate to Japanese
-        trans_result = translator.process(result["text"])
-        result["text"] = trans_result["text"]
-        result["metadata"].update(trans_result["metadata"])
 
         # Save output
         digest = hashlib.sha1(source.encode("utf-8")).hexdigest()[:8]

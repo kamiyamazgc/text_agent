@@ -1,6 +1,7 @@
 import os
 import sys
 import types
+import pytest
 
 sys.path.insert(0, os.path.abspath(os.path.join(os.path.dirname(__file__), "..", "..")))
 
@@ -32,9 +33,5 @@ def test_extract_missing_dependency(tmp_path, monkeypatch):
     monkeypatch.setattr("docpipe.extractors.ocr_pdf.marker_ocr_pdf", None)
 
     extractor = OCRPDFExtractor()
-    try:
+    with pytest.raises(ImportError):
         extractor.extract(str(fake_pdf))
-    except ImportError:
-        assert True
-    else:
-        assert False, "ImportError not raised"

@@ -1,55 +1,51 @@
-from __future__ import annotations
-
 from typing import Any, Dict
 
-from .config import Config
-from .processors import Preprocessor, Translator, Proofreader, Evaluator, Fixer
+from .config import PipelineConfig
+from .processors import Translator, Proofreader, Evaluator, Fixer
 
 
 def process_text(
     text: str,
-    cfg: Config,
-    preprocessor: Preprocessor | None = None,
-    translator: Translator | None = None,
-    proofreader: Proofreader | None = None,
-    evaluator: Evaluator | None = None,
-    fixer: Fixer | None = None,
+
+    cfg: PipelineConfig,
+    translator: Translator,
+    proofreader: Proofreader,
+    evaluator: Evaluator,
+    fixer: Fixer,
 ) -> Dict[str, Any]:
-    """Run the full processing pipeline with quality control."""
-
-    pre = preprocessor or Preprocessor()
-    tr = translator or Translator(cfg.llm.model, cfg.llm.temperature)
-    pr = proofreader or Proofreader()
-    ev = evaluator or Evaluator()
-    fx = fixer or Fixer()
-
-    # Preprocess and translate
-    text = pre.process(text)
-    trans_res = tr.process(text)
-    text = trans_res["text"]
-    metadata: Dict[str, Any] = dict(trans_res.get("metadata", {}))
-
-    # Initial proofreading and evaluation
-    pf_res = pr.process(text)
-    text = pf_res["text"]
-    quality = ev.evaluate(text)["quality_score"]
+    """Run text through translation, proofreading, evaluation and fixing."""
     retries = 0
-    prev_quality = quality
+    prev_quality = 0.0
+    metadata: Dict[str, Any] = {}
+    while True:
+        trans = translator.process(text)
+        text = trans["text"]
+        metadata.update(trans.get("metadata", {}))
 
-    # Quality control loop
-    while (
-        quality < cfg.pipeline.quality_threshold
-        and retries < cfg.pipeline.max_retries
-    ):
-        fix_res = fx.process(text)
-        text = fix_res["text"]
-        quality = ev.evaluate(text)["quality_score"]
-        improvement = quality - prev_quality
-        if improvement < cfg.pipeline.min_improvement:
+        pf = proofreader.process(text)
+        text = pf["text"]
+        metadata["proofread_quality"] = pf.get("quality_score")
+
+        eval_result = evaluator.evaluate(text)
+        quality = eval_result["quality_score"]
+        metadata.update(eval_result)
+
+        if quality >= cfg.quality_threshold:
             break
+
+        if retries >= cfg.max_retries:
+            break
+
+        improvement = quality - prev_quality
+        if improvement < cfg.min_improvement:
+            break
+
+        fix_result = fixer.process(text)
+        text = fix_result["text"]
+
         prev_quality = quality
         retries += 1
 
     metadata["retries"] = retries
-    metadata["quality_score"] = quality
-    return {"text": text, "metadata": metadata, "quality_score": quality}
+
+    return {"text": text, "metadata": metadata}

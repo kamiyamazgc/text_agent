@@ -1,5 +1,10 @@
 from pathlib import Path
-import yaml  # type: ignore
+from typing import Optional
+
+try:  # optional dependency
+    import yaml  # type: ignore
+except ModuleNotFoundError:  # pragma: no cover - optional
+    yaml = None  # type: ignore
 from pydantic import BaseModel
 
 class PipelineConfig(BaseModel):
@@ -23,10 +28,26 @@ class Config(BaseModel):
 
     @classmethod
     def from_yaml(cls, path: str) -> "Config":
+        if yaml is None:
+            raise ImportError("PyYAML is required to load configuration files")
         with open(path, "r", encoding="utf-8") as f:
             data = yaml.safe_load(f)
         return cls(**data)
 
+    @classmethod
+    def load(cls, path: Optional[str] = None) -> "Config":
+        """Load configuration from YAML file if available."""
+        if path:
+            return cls.from_yaml(path)
+
+        default_path = Path("config.yaml")
+        if default_path.exists():
+            return cls.from_yaml(str(default_path))
+
+        return cls()
+
     def to_yaml(self, path: str) -> None:
+        if yaml is None:
+            raise ImportError("PyYAML is required to write configuration files")
         with open(path, "w", encoding="utf-8") as f:
-            yaml.dump(self.model_dump(), f, allow_unicode=True) 
+            yaml.dump(self.model_dump(), f, allow_unicode=True)

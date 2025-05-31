@@ -1,0 +1,15 @@
+pipeline:
+  quality_threshold: 0.85
+  max_retries: 3
+  min_improvement: 0.01
+  language_tool_threshold: 0.02
+  bleu_threshold: 35.0
+
+llm:
+  profile: "default"  # or "local"
+  model: "gpt-4"
+  temperature: 0.7
+
+output_dir: "output"
+temp_dir: "temp"
+log_dir: "logs"

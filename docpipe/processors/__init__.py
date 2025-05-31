@@ -1,4 +1,5 @@
 from .preprocessor import Preprocessor
+from .fixer import Fixer
 
 try:  # Optional dependency
     from .evaluator import Evaluator
@@ -10,7 +11,7 @@ try:  # Optional dependency
 except Exception:  # pragma: no cover - optional
     Proofreader = None  # type: ignore
 
-__all__ = ["Preprocessor"]
+__all__ = ["Preprocessor", "Fixer"]
 
 if Proofreader is not None:
     __all__.append("Proofreader")

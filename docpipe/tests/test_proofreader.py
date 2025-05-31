@@ -7,7 +7,8 @@ sys.path.insert(0, os.path.abspath(os.path.join(os.path.dirname(__file__), "..",
 from docpipe.processors.proofreader import Proofreader  # noqa: E402
 
 
-def _dummy_openai_module(result: str = "修正後"):
+def _dummy_openai_module(result: str = ""):
+
     class DummyChatCompletion:
         @staticmethod
         def create(model, messages, temperature=0.0):

@@ -1,7 +1,7 @@
 import re
 from pathlib import Path
 from typing import Dict, Any, Optional
-import yt_dlp
+import yt_dlp  # type: ignore
 from .base import BaseExtractor
 
 class YouTubeExtractor(BaseExtractor):
@@ -21,9 +21,12 @@ class YouTubeExtractor(BaseExtractor):
     
     def _get_video_id(self, url: str) -> str:
         """Extract video ID from YouTube URL"""
-        if 'youtu.be' in url:
-            return url.split('/')[-1]
-        return re.search(r'v=([\w-]+)', url).group(1)
+        if "youtu.be" in url:
+            return url.split("/")[-1]
+        match = re.search(r"v=([\w-]+)", url)
+        if not match:
+            raise ValueError(f"Invalid YouTube URL: {url}")
+        return match.group(1)
     
     def _download_captions(self, video_id: str) -> Optional[str]:
         """Download auto-generated captions"""

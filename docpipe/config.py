@@ -1,5 +1,5 @@
 from pathlib import Path
-import yaml
+import yaml  # type: ignore
 from pydantic import BaseModel
 
 class PipelineConfig(BaseModel):

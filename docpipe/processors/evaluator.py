@@ -8,7 +8,14 @@ try:
 except Exception:  # pragma: no cover - optional dependency
     sacrebleu = None  # type: ignore
 
-from typing import Dict, Optional
+from typing import Dict, Optional, TypedDict
+
+
+class EvaluationResult(TypedDict):
+    grammar_error_rate: float
+    readability_score: float
+    bleu_score: Optional[float]
+    quality_score: float
 
 
 class Evaluator:
@@ -39,7 +46,7 @@ class Evaluator:
         result = sacrebleu.corpus_bleu([text], [[reference]])
         return float(result.score)
 
-    def evaluate(self, text: str, reference: Optional[str] = None) -> Dict[str, Optional[float]]:
+    def evaluate(self, text: str, reference: Optional[str] = None) -> EvaluationResult:
         """Return quality metrics for given text."""
         err_rate = self.grammar_error_rate(text)
         readability = self.readability_score(text)

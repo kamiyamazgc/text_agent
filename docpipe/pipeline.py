@@ -2,6 +2,7 @@ from typing import Any, Dict, List
 
 from .config import PipelineConfig
 from .processors import Translator, Proofreader, Evaluator, Fixer
+from .processors.evaluator import EvaluationResult
 from .utils import split_into_chunks
 
 
@@ -26,8 +27,8 @@ def _process_chunk(
         text = pf["text"]
         metadata["proofread_quality"] = pf.get("quality_score")
 
-        eval_result = evaluator.evaluate(text)
-        quality = eval_result["quality_score"]
+        eval_result: EvaluationResult = evaluator.evaluate(text)
+        quality: float = eval_result["quality_score"]
         metadata.update(eval_result)
 
         if quality >= cfg.quality_threshold:

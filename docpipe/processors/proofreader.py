@@ -1,29 +1,42 @@
 try:
-    import language_tool_python as lt
+    import openai
 except Exception:  # pragma: no cover - optional dependency
-    lt = None  # type: ignore
+    openai = None  # type: ignore
 
 from typing import Dict, Any
 
 
 class Proofreader:
-    """Grammar and style proofreader using LanguageTool."""
+    """Grammar and style proofreader using OpenAI ChatCompletion."""
 
-    def __init__(self, language: str = "ja-JP") -> None:
-        if lt is None:
-            raise ImportError("language_tool_python is required for Proofreader")
-        self.language = language
-        self.tool = lt.LanguageTool(self.language)
+    def __init__(
+        self, model: str = "gpt-4o", style: str = "general", temperature: float = 0.0
+
+    ) -> None:
+        if openai is None:
+            raise ImportError("openai is required for Proofreader")
+        self.model = model
+        self.style = style
+        self.temperature = temperature
 
     def proofread(self, text: str) -> str:
-        """Return text corrected according to LanguageTool suggestions."""
-        matches = self.tool.check(text)
-        return lt.utils.correct(text, matches)
+        """Return text corrected by ChatGPT."""
+        prompt = (
+            "Proofread the following text. Fix grammar, style, and readability "
+            f"issues in {self.style} style. Return only the corrected text."
+        )
+        resp = openai.ChatCompletion.create(
+            model=self.model,
+            messages=[
+                {"role": "system", "content": prompt},
+                {"role": "user", "content": text},
+            ],
+            temperature=self.temperature,
+        )
+        return resp["choices"][0]["message"]["content"].strip()
 
     def process(self, text: str) -> Dict[str, Any]:
         """Proofread text and return corrections with a simple quality score."""
-        matches = self.tool.check(text)
-        corrected = lt.utils.correct(text, matches)
-        error_rate = len(matches) / max(len(text.split()), 1)
-        quality_score = 1.0 - error_rate
+        corrected = self.proofread(text)
+        quality_score = 1.0 if corrected == text else 0.95
         return {"text": corrected, "quality_score": quality_score}

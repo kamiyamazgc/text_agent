@@ -26,6 +26,20 @@ def test_extract_success(tmp_path, monkeypatch):
     assert result["metadata"]["source_type"] == "ocr_pdf"
 
 
+def test_extract_with_confidence(tmp_path, monkeypatch):
+    fake_pdf = tmp_path / "sample.pdf"
+    fake_pdf.write_text("dummy")
+
+    dummy_module = types.SimpleNamespace(
+        to_text_with_confidence=lambda p: ("OCR TEXT", 0.9)
+    )
+    monkeypatch.setattr("docpipe.extractors.ocr_pdf.marker_ocr_pdf", dummy_module)
+
+    extractor = OCRPDFExtractor()
+    result = extractor.extract(str(fake_pdf))
+    assert result["metadata"]["confidence"] == 0.9
+
+
 def test_extract_missing_dependency(tmp_path, monkeypatch):
     fake_pdf = tmp_path / "sample.pdf"
     fake_pdf.write_text("dummy")

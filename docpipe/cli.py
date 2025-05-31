@@ -80,6 +80,11 @@ def process(sources: List[str], config: Optional[str], output_dir: Optional[str]
             result["text"] = trans_result["text"]
             result["metadata"].update(trans_result["metadata"])
 
+        # Translate to Japanese
+        trans_result = translator.process(result["text"])
+        result["text"] = trans_result["text"]
+        result["metadata"].update(trans_result["metadata"])
+
         # Save output
         digest = hashlib.sha1(source.encode("utf-8")).hexdigest()[:8]
         slug = re.sub(r"[^a-zA-Z0-9_-]", "_", source.split("/")[-1])

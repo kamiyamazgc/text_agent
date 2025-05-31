@@ -2,8 +2,10 @@ from typing import Dict, Any
 
 try:
     import trafilatura  # type: ignore
+    from trafilatura.metadata import extract_metadata  # type: ignore
 except Exception:  # pragma: no cover - optional dependency
     trafilatura = None  # type: ignore
+    extract_metadata = None  # type: ignore
 
 from .base import BaseExtractor
 
@@ -34,4 +36,10 @@ class WebExtractor(BaseExtractor):
             "source_type": "web",
             "url": source,
         }
+        if extract_metadata is not None:
+            meta = extract_metadata(downloaded)
+            if meta:
+                for key, value in meta.items():
+                    if value:
+                        metadata[key] = value
         return {"text": text, "metadata": metadata}

@@ -11,6 +11,8 @@ from .extractors.pdf import PDFExtractor
 from .extractors.ocr_pdf import OCRPDFExtractor
 from .extractors.web import WebExtractor
 from .extractors.audio import AudioExtractor
+from .extractors.plain import PlainTextExtractor
+from .extractors.ocr_image import OCRImageExtractor
 from .processors import (
     Preprocessor,
     Translator,
@@ -66,7 +68,9 @@ def process(sources: List[str], config: Optional[str], output_dir: Optional[str]
         WebExtractor(),
         PDFExtractor(),
         OCRPDFExtractor(),
+        OCRImageExtractor(),
         AudioExtractor(cfg.whisper.model),
+        PlainTextExtractor(),
         # TODO: Add other extractors
     ]
     preprocessor = Preprocessor()

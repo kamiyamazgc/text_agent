@@ -4,7 +4,7 @@ from typing import List, Optional
 
 
 def _expand_sources(source_paths: List[str]) -> List[str]:
-    """Expand directory paths into contained file paths (non-recursive)."""
+    """Expand directory paths and special files into individual sources."""
     expanded: List[str] = []
     for src in source_paths:
         p = Path(src)
@@ -12,6 +12,11 @@ def _expand_sources(source_paths: List[str]) -> List[str]:
             for child in p.iterdir():
                 if child.is_file():
                     expanded.append(str(child))
+        elif p.is_file() and p.name == "urls.txt":
+            for line in p.read_text(encoding="utf-8").splitlines():
+                url = line.strip()
+                if url.lower().startswith("http://") or url.lower().startswith("https://"):
+                    expanded.append(url)
         else:
             expanded.append(src)
     return expanded

@@ -7,10 +7,16 @@ sys.path.insert(0, os.path.abspath(os.path.join(os.path.dirname(__file__), "..",
 from docpipe.extractors.web import WebExtractor  # noqa: E402
 
 
-def _dummy_trafilatura_module(fetch_returns="DUMMY", extract_returns="TEXT"):
+def _dummy_trafilatura_module(
+    fetch_returns="DUMMY", extract_returns="TEXT", meta_returns=None
+):
+    metadata = types.SimpleNamespace(
+        extract_metadata=lambda html: meta_returns
+    )
     return types.SimpleNamespace(
         fetch_url=lambda url: fetch_returns,
         extract=lambda html, include_comments=False, include_tables=False: extract_returns,
+        metadata=metadata,
     )
 
 
@@ -29,6 +35,16 @@ def test_extract_success(monkeypatch):
     result = extractor.extract("https://example.com")
     assert result["text"] == "TEXT"
     assert result["metadata"]["source_type"] == "web"
+
+
+def test_extract_with_metadata(monkeypatch):
+    monkeypatch.setattr(
+        "docpipe.extractors.web.trafilatura",
+        _dummy_trafilatura_module(meta_returns={"title": "Example"}),
+    )
+    extractor = WebExtractor()
+    result = extractor.extract("https://example.com")
+    assert result["metadata"]["title"] == "Example"
 
 
 def test_extract_missing_dependency(monkeypatch):

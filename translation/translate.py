@@ -1,5 +1,7 @@
 if __name__ == "__main__":
-    import argparse, pathlib, sys
+    import argparse
+    import pathlib
+    import sys
     ap = argparse.ArgumentParser()
     ap.add_argument("src", help="input .txt file or '-' for STDIN")
     ap.add_argument("-o", "--out", help="save to file")
@@ -23,7 +25,7 @@ if __name__ == "__main__":
         if args.out:
             print(f"Saving translation to: {args.out}")
             pathlib.Path(args.out).write_text(ja, encoding='utf-8')
-            print(f"Translation saved successfully")
+            print("Translation saved successfully")
         else:
             print(ja)
     except Exception as e:
@@ -31,3 +33,4 @@ if __name__ == "__main__":
         import traceback
         traceback.print_exc()
         sys.exit(1)
+

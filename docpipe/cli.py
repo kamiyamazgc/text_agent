@@ -7,7 +7,7 @@ from .extractors.pdf import PDFExtractor
 from .extractors.ocr_pdf import OCRPDFExtractor
 from .extractors.web import WebExtractor
 from .extractors.audio import AudioExtractor
-from .processors import Preprocessor, Translator
+from .processors import Preprocessor, Translator, Proofreader
 import json
 import hashlib
 import re
@@ -38,6 +38,7 @@ def process(sources: List[str], config: Optional[str], output_dir: Optional[str]
     ]
     preprocessor = Preprocessor()
     translator = Translator(cfg.llm.model, cfg.llm.temperature)
+    proofreader = Proofreader(cfg.llm.model, cfg.llm.temperature)
     
     # Process each source
     for source in sources:
@@ -66,6 +67,11 @@ def process(sources: List[str], config: Optional[str], output_dir: Optional[str]
         trans_result = translator.process(result["text"])
         result["text"] = trans_result["text"]
         result["metadata"].update(trans_result["metadata"])
+
+        # Proofread text
+        pf_result = proofreader.process(result["text"])
+        result["text"] = pf_result["text"]
+        result["metadata"]["quality_score"] = pf_result["quality_score"]
 
         # Save output
         digest = hashlib.sha1(source.encode("utf-8")).hexdigest()[:8]

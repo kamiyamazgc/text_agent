@@ -8,6 +8,7 @@ from docpipe.processors.proofreader import Proofreader  # noqa: E402
 
 
 def _dummy_openai_module(result: str = ""):
+
     class DummyChatCompletion:
         @staticmethod
         def create(model, messages, temperature=0.0):

@@ -11,6 +11,7 @@ class Proofreader:
 
     def __init__(
         self, model: str = "gpt-4o", style: str = "general", temperature: float = 0.0
+
     ) -> None:
         if openai is None:
             raise ImportError("openai is required for Proofreader")

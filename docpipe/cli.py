@@ -1,6 +1,24 @@
 import click
 from pathlib import Path
 from typing import List, Optional
+import json
+import hashlib
+import re
+
+from .config import Config
+from .extractors.youtube import YouTubeExtractor
+from .extractors.pdf import PDFExtractor
+from .extractors.ocr_pdf import OCRPDFExtractor
+from .extractors.web import WebExtractor
+from .extractors.audio import AudioExtractor
+from .processors import (
+    Preprocessor,
+    Translator,
+    Proofreader,
+    Evaluator,
+    Fixer,
+)
+from .pipeline import process_text
 
 
 def _expand_sources(source_paths: List[str]) -> List[str]:
@@ -20,23 +38,6 @@ def _expand_sources(source_paths: List[str]) -> List[str]:
         else:
             expanded.append(src)
     return expanded
-from .config import Config
-from .extractors.youtube import YouTubeExtractor
-from .extractors.pdf import PDFExtractor
-from .extractors.ocr_pdf import OCRPDFExtractor
-from .extractors.web import WebExtractor
-from .extractors.audio import AudioExtractor
-from .processors import (
-    Preprocessor,
-    Translator,
-    Proofreader,
-    Evaluator,
-    Fixer,
-)
-from .pipeline import process_text
-import json
-import hashlib
-import re
 
 @click.group()
 def cli():

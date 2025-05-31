@@ -7,6 +7,7 @@ from .extractors.pdf import PDFExtractor
 from .extractors.ocr_pdf import OCRPDFExtractor
 from .extractors.web import WebExtractor
 from .extractors.audio import AudioExtractor
+from .processors import Preprocessor
 import json
 import hashlib
 import re
@@ -36,6 +37,7 @@ def process(sources: List[str], config: Optional[str], output_dir: Optional[str]
         AudioExtractor(),
         # TODO: Add other extractors
     ]
+    preprocessor = Preprocessor()
     
     # Process each source
     for source in sources:
@@ -56,6 +58,9 @@ def process(sources: List[str], config: Optional[str], output_dir: Optional[str]
         if result is None:
             click.echo(f"Error: No extractor succeeded for {source}", err=True)
             continue
+
+        # Preprocess text
+        result["text"] = preprocessor.process(result["text"])
 
         # Save output
         digest = hashlib.sha1(source.encode("utf-8")).hexdigest()[:8]

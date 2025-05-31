@@ -19,9 +19,15 @@ class LLMConfig(BaseModel):
     model: str = "gpt-4"
     temperature: float = 0.7
 
+class TranslatorConfig(BaseModel):
+    model: str = "gpt-4"
+    temperature: float = 0.7
+    prompt: str = "Translate the following text to {target_lang}:\n{text}"
+
 class Config(BaseModel):
     pipeline: PipelineConfig = PipelineConfig()
     llm: LLMConfig = LLMConfig()
+    translator: TranslatorConfig = TranslatorConfig()
     output_dir: Path = Path("output")
     temp_dir: Path = Path("temp")
     log_dir: Path = Path("logs")

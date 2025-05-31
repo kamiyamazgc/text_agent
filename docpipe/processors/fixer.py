@@ -6,7 +6,7 @@ class Fixer:
 
     def remove_duplicate_lines(self, text: str) -> str:
         lines = text.splitlines()
-        cleaned = []
+        cleaned: list[str] = []
         for line in lines:
             if not cleaned or line != cleaned[-1]:
                 cleaned.append(line)

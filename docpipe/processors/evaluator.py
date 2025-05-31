@@ -8,7 +8,7 @@ try:
 except Exception:  # pragma: no cover - optional dependency
     sacrebleu = None  # type: ignore
 
-from typing import Dict, Optional, TypedDict
+from typing import Optional, TypedDict
 
 
 class EvaluationResult(TypedDict):

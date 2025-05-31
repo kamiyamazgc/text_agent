@@ -1,5 +1,5 @@
 numpy>=1.24.0
-pydantic>=2.5.0
+pydantic>=2.5.0  # ensure version 2 for model_dump
 python-dotenv>=1.0.0
 click>=8.0
 fastapi>=0.104.0

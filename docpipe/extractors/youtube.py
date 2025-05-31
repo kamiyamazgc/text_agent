@@ -1,8 +1,12 @@
 import re
 from pathlib import Path
 from typing import Dict, Any, Optional
-import yt_dlp  # type: ignore
+try:
+    import yt_dlp  # type: ignore
+except Exception:  # pragma: no cover - optional dependency
+    yt_dlp = None  # type: ignore
 from .base import BaseExtractor
+from .audio import AudioExtractor
 
 class YouTubeExtractor(BaseExtractor):
     """Extractor for YouTube videos using captions or audio transcription"""
@@ -30,6 +34,8 @@ class YouTubeExtractor(BaseExtractor):
     
     def _download_captions(self, video_id: str) -> Optional[str]:
         """Download auto-generated captions"""
+        if yt_dlp is None:
+            raise ImportError("yt_dlp is required for YouTube extraction")
         ydl_opts = {
             'writesubtitles': True,
             'writeautomaticsub': True,
@@ -50,6 +56,8 @@ class YouTubeExtractor(BaseExtractor):
     
     def _download_audio(self, video_id: str) -> Optional[Path]:
         """Download audio for transcription"""
+        if yt_dlp is None:
+            raise ImportError("yt_dlp is required for YouTube extraction")
         ydl_opts = {
             'format': 'bestaudio/best',
             'postprocessors': [{
@@ -88,10 +96,15 @@ class YouTubeExtractor(BaseExtractor):
         # Fallback to audio transcription
         audio_file = self._download_audio(video_id)
         if audio_file:
-            # TODO: Implement Whisper transcription
-            # For now, return placeholder
+            try:
+                audio_result = AudioExtractor().extract(str(audio_file))
+            except Exception as e:  # pragma: no cover - passthrough any errors
+                raise RuntimeError(f"Failed to transcribe audio: {e}") from e
+
+            metadata['audio_file'] = audio_result['metadata'].get('file_name')
+            metadata['audio_model'] = audio_result['metadata'].get('model')
             return {
-                'text': f"[Audio transcription placeholder for {video_id}]",
+                'text': audio_result['text'],
                 'metadata': metadata
             }
         

@@ -92,6 +92,16 @@ log_dir: "logs"
 ```
 This file will be loaded automatically when running the CLI from the same directory.
 
+#### Configuration Precedence
+
+Configuration is resolved in this order:
+
+1. **Command line options** such as `--output-dir` and `--config` take highest priority.
+2. If `--config` is not provided but `config.yaml` exists in the current directory, it is loaded.
+3. Otherwise, default values defined in `docpipe.config.Config` are used.
+
+All configuration is loaded via `Config.load()` so the rule is consistent across the project.
+
 ## Development
 
 ### Project Structure

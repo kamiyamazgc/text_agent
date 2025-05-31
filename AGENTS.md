@@ -149,6 +149,16 @@ agents:
       style: "general"
 ```
 
+### Configuration Precedence
+
+The project loads configuration values in the following order:
+
+1. **Command line options** (`--output-dir`, `--config`) override all other settings.
+2. If `--config` is omitted but a `config.yaml` file exists in the working directory, its values are used.
+3. When neither of the above is provided, the defaults defined in `docpipe.config.Config` apply.
+
+All configuration is loaded via `Config.load()`, ensuring consistent behavior across the project.
+
 ## Error Handling
 
 ### Agent Failures

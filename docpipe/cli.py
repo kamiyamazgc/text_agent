@@ -5,6 +5,7 @@ from .config import Config
 from .extractors.youtube import YouTubeExtractor
 from .extractors.pdf import PDFExtractor
 from .extractors.ocr_pdf import OCRPDFExtractor
+from .extractors.web import WebExtractor
 from .extractors.audio import AudioExtractor
 import json
 import hashlib
@@ -29,6 +30,7 @@ def process(sources: List[str], config: str, output_dir: str):
     # Initialize extractors
     extractors = [
         YouTubeExtractor(cfg.temp_dir),
+        WebExtractor(),
         PDFExtractor(),
         OCRPDFExtractor(),
         AudioExtractor(),

@@ -9,6 +9,11 @@ from .pdf import PDFExtractor
 from .ocr_pdf import OCRPDFExtractor
 
 try:  # Optional dependency
+    from .web import WebExtractor
+except Exception:  # pragma: no cover - optional
+    WebExtractor = None  # type: ignore
+
+try:  # Optional dependency
     from .audio import AudioExtractor
 except Exception:  # pragma: no cover - optional
     AudioExtractor = None  # type: ignore
@@ -20,4 +25,7 @@ if AudioExtractor is not None:
 
 if YouTubeExtractor is not None:
     __all__.insert(1, "YouTubeExtractor")
+
+if WebExtractor is not None:
+    __all__.insert(1, "WebExtractor")
 

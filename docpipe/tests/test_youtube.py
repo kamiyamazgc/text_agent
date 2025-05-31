@@ -1,5 +1,6 @@
 import os
 import sys
+import types
 from pathlib import Path
 
 sys.path.insert(0, os.path.abspath(os.path.join(os.path.dirname(__file__), "..", "..")))
@@ -60,3 +61,33 @@ def test_extract_japanese_caption(monkeypatch, tmp_path):
     result = extractor.extract("https://youtu.be/abc123")
     assert result["metadata"]["language"] == "ja"
     assert not result["metadata"]["needs_translation"]
+
+
+def test_download_captions_with_auto_lang(monkeypatch, tmp_path):
+    video_id = "abc123"
+
+    class DummyDL:
+        def __init__(self, opts=None):
+            self.opts = opts or {}
+
+        def __enter__(self):
+            return self
+
+        def __exit__(self, exc_type, exc, tb):
+            pass
+
+        def extract_info(self, url, download=False):
+            return {"automatic_captions": {"fr": [{"url": "dummy"}]}}
+
+        def download(self, urls):
+            lang = self.opts.get("subtitleslangs", ["fr"])[0]
+            outtmpl = self.opts.get("outtmpl", "")
+            caption_file = Path(outtmpl.replace("%(ext)s", f"{lang}.vtt"))
+            caption_file.write_text("AUTO CAPTION", encoding="utf-8")
+
+    dummy_module = types.SimpleNamespace(YoutubeDL=DummyDL)
+    monkeypatch.setattr("docpipe.extractors.youtube.yt_dlp", dummy_module)
+
+    extractor = YouTubeExtractor(tmp_path)
+    text = extractor._download_captions(video_id)
+    assert text == "AUTO CAPTION"

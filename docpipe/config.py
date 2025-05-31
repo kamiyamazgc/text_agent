@@ -71,4 +71,8 @@ class Config(BaseModel):
         if yaml is None:
             raise ImportError("PyYAML is required to write configuration files")
         with open(path, "w", encoding="utf-8") as f:
-            yaml.dump(self.model_dump(), f, allow_unicode=True)
+            try:
+                data = self.model_dump()  # Pydantic v2
+            except AttributeError:  # pragma: no cover - Pydantic v1 fallback
+                data = self.dict()  # type: ignore[attr-defined]
+            yaml.dump(data, f, allow_unicode=True)

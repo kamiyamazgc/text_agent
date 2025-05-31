@@ -1,7 +1,7 @@
 openai>=1.0.0
 tiktoken>=0.5.0
 yt-dlp>=2023.12.30
-whisper-large-v3
+openai-whisper>=20231117
 trafilatura>=1.6.1
 marker-pdf>=0.1.0
 language-tool-python>=2.7.1

@@ -66,3 +66,43 @@ def test_min_improvement_breaks_loop():
     result = process_text("bad", cfg, translator, proofreader, evaluator, fixer)
     assert result["metadata"]["retries"] == 1
     assert result["metadata"]["quality_score"] == 0.45
+
+
+def test_long_text_chunking():
+    cfg = PipelineConfig()
+
+    class CTranslator:
+        def __init__(self):
+            self.calls = 0
+
+        def process(self, text):
+            self.calls += 1
+            return {"text": text, "metadata": {}}
+
+    class CProof:
+        def process(self, text):
+            return {"text": text, "quality_score": 1.0}
+
+    class CEval:
+        def evaluate(self, text, reference=None):
+            return {"quality_score": 1.0}
+
+    translator = CTranslator()
+    proofreader = CProof()
+    evaluator = CEval()
+    fixer = DummyFixer()
+
+    long_text = " ".join([f"w{i}" for i in range(25)])
+    result = process_text(
+        long_text,
+        cfg,
+        translator,
+        proofreader,
+        evaluator,
+        fixer,
+        max_tokens=10,
+    )
+
+    assert translator.calls == 3
+    assert result["text"].strip() == long_text
+    assert len(result["metadata"]["chunks"]) == 3

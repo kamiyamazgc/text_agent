@@ -24,3 +24,17 @@ def test_correct_ocr_errors():
     assert "fi" in processed
     assert '"test"' in processed
     assert "- example" in processed
+
+
+def test_paragraph_break_inserts_blank_line():
+    text = "First paragraph.\nSecond paragraph."
+    pre = Preprocessor()
+    processed = pre.process(text)
+    assert processed == "First paragraph.\n\nSecond paragraph."
+
+
+def test_multiple_blank_lines_collapse_to_one():
+    text = "First.\n\n\nSecond."
+    pre = Preprocessor()
+    processed = pre.process(text)
+    assert processed == "First.\n\nSecond."

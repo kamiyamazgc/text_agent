@@ -25,19 +25,28 @@ class Preprocessor:
         """Restore line breaks by merging lines inside paragraphs."""
         lines = text.splitlines()
         restored: list[str] = []
+        punct = (".", "?", "!", "。", "？", "！", "：", ":")
         for line in lines:
             stripped = line.strip()
             if not stripped:
-                restored.append("")
+                if restored and restored[-1] != "":
+                    restored.append("")
                 continue
 
             if (
                 restored
                 and restored[-1]
-                and not restored[-1].endswith((".", "?", "!", "。", "？", "！", "：", ":"))
+                and not restored[-1].endswith(punct)
             ):
                 restored[-1] += " " + stripped
             else:
+                if (
+                    restored
+                    and restored[-1]
+                    and restored[-1].endswith(punct)
+                    and (len(restored) == 1 or restored[-2] != "")
+                ):
+                    restored.append("")
                 restored.append(stripped)
         return "\n".join(restored)
 

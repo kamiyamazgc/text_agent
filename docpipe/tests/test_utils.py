@@ -36,3 +36,19 @@ def test_split_into_chunks_with_dummy_tokenizer(monkeypatch):
         "five six seven eight",
         "nine",
     ]
+
+
+def test_split_into_chunks_handles_tiktoken_failure(monkeypatch):
+    class FailingModule:
+        def get_encoding(self, name):
+            raise RuntimeError("download failed")
+
+    monkeypatch.setattr("docpipe.utils.tiktoken", FailingModule())
+
+    text = "one two three four five six seven eight nine"
+    chunks = split_into_chunks(text, max_tokens=3)
+    assert chunks == [
+        "one two three",
+        "four five six",
+        "seven eight nine",
+    ]

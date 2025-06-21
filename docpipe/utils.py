@@ -20,7 +20,12 @@ def split_into_chunks(text: str, max_tokens: int = 2048) -> List[str]:
         chunks = [" ".join(words[i : i + max_tokens]) for i in range(0, len(words), max_tokens)]
         return chunks or [""]
 
-    enc = tiktoken.get_encoding("cl100k_base")
-    tokens = enc.encode(text)
-    pieces = [tokens[i : i + max_tokens] for i in range(0, len(tokens), max_tokens)]
-    return [enc.decode(chunk) for chunk in pieces] or [""]
+    try:
+        enc = tiktoken.get_encoding("cl100k_base")
+        tokens = enc.encode(text)
+        pieces = [tokens[i : i + max_tokens] for i in range(0, len(tokens), max_tokens)]
+        return [enc.decode(chunk) for chunk in pieces] or [""]
+    except Exception:  # pragma: no cover - optional dependency may fail
+        words = text.split()
+        chunks = [" ".join(words[i : i + max_tokens]) for i in range(0, len(words), max_tokens)]
+        return chunks or [""]

@@ -2,13 +2,13 @@ import click
 from pathlib import Path
 from typing import List, Optional
 import json
-import hashlib
 import re
 
 from .config import Config
 from .extractors.youtube import YouTubeExtractor
 from .extractors.pdf import PDFExtractor
 from .extractors.ocr_pdf import OCRPDFExtractor
+from .extractors.ocr_image import OCRImageExtractor
 from .extractors.web import WebExtractor
 from .extractors.audio import AudioExtractor
 from .extractors.plain import PlainTextExtractor
@@ -88,6 +88,7 @@ def process(sources: List[str], config: Optional[str], output_dir: Optional[str]
     fixer = Fixer()
     
     # Process each source
+    index_counter = 1
     for source in sources:
         click.echo(f"Processing: {source}")
 
@@ -123,9 +124,8 @@ def process(sources: List[str], config: Optional[str], output_dir: Optional[str]
         result["metadata"].update(pipeline_result["metadata"])
 
         # Save output
-        digest = hashlib.sha1(source.encode("utf-8")).hexdigest()[:8]
         slug = re.sub(r"[^a-zA-Z0-9_-]", "_", source.split("/")[-1])
-        output_file = cfg.output_dir / f"doc_{digest}__{slug}.txt"
+        output_file = cfg.output_dir / f"doc_{index_counter}__{slug}.txt"
         output_file.parent.mkdir(parents=True, exist_ok=True)
         output_file.write_text(result['text'], encoding='utf-8')
 
@@ -134,6 +134,7 @@ def process(sources: List[str], config: Optional[str], output_dir: Optional[str]
         meta_file.write_text(json.dumps(result['metadata'], indent=2), encoding='utf-8')
 
         click.echo(f"Successfully processed: {output_file}")
+        index_counter += 1
 
 if __name__ == '__main__':
     cli() 

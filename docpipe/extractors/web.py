@@ -40,8 +40,19 @@ class WebExtractor(BaseExtractor):
         if extract_metadata is not None:
             meta = extract_metadata(downloaded)
             if meta:
-                for key, value in meta.items():
-                    if value:
-                        metadata[key] = value
+                # trafilatura 2.0.0ではDocumentオブジェクトを返す
+                if hasattr(meta, 'items'):
+                    # 辞書の場合（古いバージョン）
+                    for key, value in meta.items():
+                        if value:
+                            metadata[key] = value
+                else:
+                    # Documentオブジェクトの場合（新しいバージョン）
+                    # 利用可能な属性を取得
+                    for attr in ['title', 'author', 'hostname', 'description', 'sitename', 'date']:
+                        if hasattr(meta, attr):
+                            value = getattr(meta, attr)
+                            if value:
+                                metadata[attr] = value
 
         return {"text": text, "metadata": metadata}

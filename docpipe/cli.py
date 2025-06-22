@@ -3,6 +3,7 @@ from pathlib import Path
 from typing import List, Optional
 import json
 import re
+from datetime import datetime
 
 from .config import Config
 from .extractors.youtube import YouTubeExtractor
@@ -18,6 +19,7 @@ from .processors import (
     Proofreader,
     Evaluator,
     Fixer,
+    SpellChecker,
 )
 from .pipeline import process_text
 
@@ -66,7 +68,7 @@ def process(sources: List[str], config: Optional[str], output_dir: Optional[str]
         YouTubeExtractor(cfg.temp_dir),
         WebExtractor(),
         PDFExtractor(),
-        OCRPDFExtractor(),
+        # OCRPDFExtractor(),  # Temporarily disabled due to missing marker-ocr-pdf
         OCRImageExtractor(),
         AudioExtractor(cfg.whisper.model),
         PlainTextExtractor(),
@@ -86,6 +88,7 @@ def process(sources: List[str], config: Optional[str], output_dir: Optional[str]
     )
     evaluator = Evaluator()
     fixer = Fixer()
+    spellchecker = SpellChecker()
     
     # Process each source
     index_counter = 1
@@ -119,13 +122,37 @@ def process(sources: List[str], config: Optional[str], output_dir: Optional[str]
             proofreader,
             evaluator,
             fixer,
+            spellchecker,
         )
         result["text"] = pipeline_result["text"]
         result["metadata"].update(pipeline_result["metadata"])
 
         # Save output
-        slug = re.sub(r"[^a-zA-Z0-9_-]", "_", source.split("/")[-1])
-        output_file = cfg.output_dir / f"doc_{index_counter}__{slug}.txt"
+        # Generate meaningful filename using metadata and yymmdd format
+        timestamp = datetime.now().strftime("%y%m%d")
+        
+        # Try to get meaningful name from metadata
+        meaningful_name = None
+        if "title" in result["metadata"] and result["metadata"]["title"]:
+            meaningful_name = result["metadata"]["title"]
+        elif "description" in result["metadata"] and result["metadata"]["description"]:
+            # Use first 50 chars of description if title not available
+            meaningful_name = result["metadata"]["description"][:50]
+        elif "filename" in result["metadata"] and result["metadata"]["filename"]:
+            meaningful_name = result["metadata"]["filename"]
+        
+        if meaningful_name:
+            # Clean the meaningful name for filename use
+            meaningful_name = re.sub(r"[^a-zA-Z0-9_\u3040-\u309F\u30A0-\u30FF\u4E00-\u9FAF]", "_", meaningful_name)
+            meaningful_name = meaningful_name.strip("_")
+            # Limit length to avoid too long filenames
+            if len(meaningful_name) > 50:
+                meaningful_name = meaningful_name[:50].rstrip("_")
+        else:
+            # Fallback to source-based slug
+            meaningful_name = re.sub(r"[^a-zA-Z0-9_-]", "_", source.split("/")[-1])
+        
+        output_file = cfg.output_dir / f"{timestamp}_{index_counter:03d}_{meaningful_name}.txt"
         output_file.parent.mkdir(parents=True, exist_ok=True)
         output_file.write_text(result['text'], encoding='utf-8')
 

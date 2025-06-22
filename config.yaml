@@ -7,16 +7,16 @@ pipeline:
 
 llm:
   profile: "default"  # or "local"
-  model: "gpt-4"
+  model: "gpt-4.1-mini"
   temperature: 0.7
 
 translator:
-  model: "gpt-4"
+  model: "gpt-4.1-mini"
   temperature: 0.7
   prompt: "Translate the following text to {target_lang}:\n{text}"
 
 proofreader:
-  model: "gpt-4o"
+  model: "gpt-4.1-mini"
   style: "general"
   temperature: 0.0
   prompt: "Proofread the following text. Fix grammar, style, and readability issues in {style} style. Return only the corrected text."

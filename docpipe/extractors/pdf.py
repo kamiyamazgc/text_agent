@@ -2,15 +2,15 @@ from pathlib import Path
 from typing import Any, Dict
 
 try:
-    import marker_pdf  # type: ignore
+    import pypdfium2  # type: ignore
 except Exception:  # pragma: no cover - optional dependency
-    marker_pdf = None  # type: ignore
+    pypdfium2 = None  # type: ignore
 
 from .base import BaseExtractor
 
 
 class PDFExtractor(BaseExtractor):
-    """Extractor for digital PDFs using marker-pdf"""
+    """Extractor for digital PDFs using pypdfium2"""
 
     def can_handle(self, source: str) -> bool:
         """Check if the source is a PDF file"""
@@ -22,15 +22,24 @@ class PDFExtractor(BaseExtractor):
         if not pdf_path.exists():
             raise FileNotFoundError(f"PDF not found: {source}")
 
-        if marker_pdf is None:
-            raise ImportError("marker_pdf is required for PDF extraction")
+        if pypdfium2 is None:
+            raise ImportError("pypdfium2 is required for PDF extraction")
 
         try:
-            if hasattr(marker_pdf, "to_text_with_layout"):
-                text, layout = marker_pdf.to_text_with_layout(pdf_path)
-            else:
-                layout = None
-                text = marker_pdf.to_text(pdf_path)
+            # Open PDF and extract text
+            pdf = pypdfium2.PdfDocument(pdf_path)
+            text_parts = []
+            
+            # Extract text from each page
+            for page_index in range(len(pdf)):
+                page = pdf[page_index]
+                text_page = page.get_textpage()
+                text_parts.append(text_page.get_text_range())
+                text_page.close()
+            
+            text = "\n".join(text_parts)
+            pdf.close()
+            
         except Exception as e:  # pragma: no cover - passthrough any extraction errors
             raise RuntimeError(f"Failed to extract PDF: {e}")
 
@@ -38,6 +47,4 @@ class PDFExtractor(BaseExtractor):
             "source_type": "pdf",
             "file_name": pdf_path.name,
         }
-        if layout is not None:
-            metadata["layout"] = layout
         return {"text": text, "metadata": metadata}

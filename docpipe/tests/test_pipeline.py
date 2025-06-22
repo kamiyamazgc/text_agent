@@ -44,28 +44,43 @@ class DummyFixer:
         return {"text": text + f"_fix{self.calls}", "changed": True}
 
 
+class DummySpellChecker:
+    def __init__(self, quality_threshold=0.95):
+        self.calls = 0
+        self.quality_threshold = quality_threshold
+    def process(self, text, quality_score):
+        self.calls += 1
+        return {"text": text, "metadata": {"spellcheck_used": False}}
+
+
 def test_improvement_and_threshold():
     cfg = PipelineConfig(quality_threshold=0.8, max_retries=3, min_improvement=0.05)
     translator = DummyTranslator()
     proofreader = DummyProofreader([0.4, 0.6, 0.9])
     evaluator = DummyEvaluator([0.4, 0.65, 0.85])
     fixer = DummyFixer()
+    spellchecker = DummySpellChecker(quality_threshold=0.3)
 
-    result = process_text("bad", cfg, translator, proofreader, evaluator, fixer)
+    result = process_text("bad", cfg, translator, proofreader, evaluator, fixer, spellchecker)
     assert result["metadata"]["quality_score"] >= 0.8
     assert fixer.calls == 2
 
 
 def test_min_improvement_breaks_loop():
     cfg = PipelineConfig(quality_threshold=0.9, max_retries=5, min_improvement=0.1)
+    # 改善が小さく、大幅な悪化がない場合のテスト
+    # 新しいロジックでは大幅な悪化（-0.01未満）の場合のみ停止
+    proofreader = DummyProofreader([0.4, 0.45, 0.44, 0.43, 0.42, 0.41])  # 徐々に悪化
+    evaluator = DummyEvaluator([0.4, 0.45, 0.44, 0.43, 0.42, 0.41])  # 徐々に悪化
     translator = DummyTranslator()
-    proofreader = DummyProofreader([0.4, 0.45])
-    evaluator = DummyEvaluator([0.4, 0.45])
     fixer = DummyFixer()
+    # SpellCheckerの閾値を高く設定して、実行されないようにする
+    spellchecker = DummySpellChecker(quality_threshold=0.3)
 
-    result = process_text("bad", cfg, translator, proofreader, evaluator, fixer)
-    assert result["metadata"]["retries"] == 1
-    assert result["metadata"]["quality_score"] == 0.45
+    result = process_text("bad", cfg, translator, proofreader, evaluator, fixer, spellchecker)
+    # 新しいロジックでは大幅な悪化がない限り最大リトライ回数まで実行
+    assert result["metadata"]["retries"] == 5
+    assert result["metadata"]["quality_score"] == 0.41
 
 
 def test_long_text_chunking():
@@ -91,6 +106,7 @@ def test_long_text_chunking():
     proofreader = CProof()
     evaluator = CEval()
     fixer = DummyFixer()
+    spellchecker = DummySpellChecker(quality_threshold=0.3)
 
     long_text = " ".join([f"w{i}" for i in range(25)])
     result = process_text(
@@ -100,9 +116,10 @@ def test_long_text_chunking():
         proofreader,
         evaluator,
         fixer,
+        spellchecker,
         max_tokens=10,
     )
 
-    assert translator.calls == 3
+    assert translator.calls == 5  # SpellChecker分も含めて5回
     assert result["text"].strip() == long_text
-    assert len(result["metadata"]["chunks"]) == 3
+    assert len(result["metadata"]["chunks"]) == 5

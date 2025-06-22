@@ -1,7 +1,9 @@
 try:
     import openai
+    from openai import OpenAI
 except Exception:  # pragma: no cover - optional dependency
     openai = None  # type: ignore
+    OpenAI = None  # type: ignore
 
 from typing import Dict, Any
 
@@ -11,7 +13,7 @@ class Proofreader:
 
     def __init__(
         self,
-        model: str = "gpt-4o",
+        model: str = "gpt-4.1-mini",
         style: str = "general",
         temperature: float = 0.0,
         prompt: str = (
@@ -25,11 +27,12 @@ class Proofreader:
         self.style = style
         self.temperature = temperature
         self.prompt = prompt
+        self.client = OpenAI()
 
     def proofread(self, text: str) -> str:
         """Return text corrected by ChatGPT."""
         prompt = self.prompt.format(style=self.style)
-        resp = openai.ChatCompletion.create(
+        resp = self.client.chat.completions.create(
             model=self.model,
             messages=[
                 {"role": "system", "content": prompt},
@@ -37,7 +40,7 @@ class Proofreader:
             ],
             temperature=self.temperature,
         )
-        return resp["choices"][0]["message"]["content"].strip()
+        return resp.choices[0].message.content.strip()
 
     def process(self, text: str) -> Dict[str, Any]:
         """Proofread text and return corrections with a simple quality score."""

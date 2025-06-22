@@ -8,12 +8,23 @@ except Exception:  # pragma: no cover - optional dependency
 from .base import BaseExtractor
 from .audio import AudioExtractor
 
-LANGUAGE_PATTERN = re.compile(r"[\u3040-\u30ff\u4e00-\u9fff]")
-
+# 日本語文字パターン
+JAPANESE_PATTERN = re.compile(r"[\u3040-\u30ff\u4e00-\u9fff]")
+# 中国語文字パターン（簡体字・繁体字）
+CHINESE_PATTERN = re.compile(r"[\u4e00-\u9fff]")
+# 韓国語文字パターン
+KOREAN_PATTERN = re.compile(r"[\uac00-\ud7af]")
 
 def _detect_language(text: str) -> str:
-    """Return 'ja' if Japanese characters are present else 'en'."""
-    return "ja" if LANGUAGE_PATTERN.search(text) else "en"
+    """Detect language based on character patterns."""
+    if JAPANESE_PATTERN.search(text):
+        return "ja"
+    elif CHINESE_PATTERN.search(text):
+        return "zh"
+    elif KOREAN_PATTERN.search(text):
+        return "ko"
+    else:
+        return "en"
 
 class YouTubeExtractor(BaseExtractor):
     """Extractor for YouTube videos using captions or audio transcription"""
@@ -26,7 +37,8 @@ class YouTubeExtractor(BaseExtractor):
         """Check if the source is a YouTube URL"""
         patterns = [
             r'https?://(?:www\.)?youtube\.com/watch\?v=[\w-]+',
-            r'https?://youtu\.be/[\w-]+'
+            r'https?://youtu\.be/[\w-]+',
+            r'https?://(?:www\.)?youtube\.com/live/[\w-]+'
         ]
         return any(re.match(pattern, source) for pattern in patterns)
     
@@ -34,13 +46,21 @@ class YouTubeExtractor(BaseExtractor):
         """Extract video ID from YouTube URL"""
         if "youtu.be" in url:
             return url.split("/")[-1]
-        match = re.search(r"v=([\w-]+)", url)
-        if not match:
-            raise ValueError(f"Invalid YouTube URL: {url}")
-        return match.group(1)
+        elif "/live/" in url:
+            # ライブ配信URLの場合
+            match = re.search(r"/live/([\w-]+)", url)
+            if not match:
+                raise ValueError(f"Invalid YouTube live URL: {url}")
+            return match.group(1)
+        else:
+            # 通常のwatch URLの場合
+            match = re.search(r"v=([\w-]+)", url)
+            if not match:
+                raise ValueError(f"Invalid YouTube URL: {url}")
+            return match.group(1)
     
     def _download_captions(self, video_id: str) -> Optional[str]:
-        """Download auto-generated captions"""
+        """Download auto-generated captions with priority for English"""
         if yt_dlp is None:
             raise ImportError("yt_dlp is required for YouTube extraction")
         try:
@@ -56,12 +76,35 @@ class YouTubeExtractor(BaseExtractor):
         if not auto_caps:
             return None
 
-        lang = next(iter(auto_caps))
+        # 動画の言語を検出（タイトルと説明から）
+        video_title = info.get('title', '')
+        video_description = info.get('description', '')
+        video_text = f"{video_title} {video_description}"
+        video_language = _detect_language(video_text)
+
+        # 動画が日本語の場合は日本語字幕を優先
+        if video_language == 'ja':
+            preferred_languages = ['ja', 'en', 'zh', 'ko']
+        else:
+            # その他の言語の場合は英語を優先
+            preferred_languages = ['en', 'ja', 'zh', 'ko']
+        
+        selected_lang = None
+        
+        # 優先言語から順番に確認
+        for lang in preferred_languages:
+            if lang in auto_caps:
+                selected_lang = lang
+                break
+        
+        # 優先言語が見つからない場合は最初の利用可能な言語を使用
+        if selected_lang is None:
+            selected_lang = next(iter(auto_caps))
 
         ydl_opts = {
             'writesubtitles': True,
             'writeautomaticsub': True,
-            'subtitleslangs': [lang],
+            'subtitleslangs': [selected_lang],
             'skip_download': True,
             'outtmpl': str(self.temp_dir / f'{video_id}.%(ext)s')
         }
@@ -69,7 +112,7 @@ class YouTubeExtractor(BaseExtractor):
         try:
             with yt_dlp.YoutubeDL(ydl_opts) as ydl:
                 ydl.download([f'https://www.youtube.com/watch?v={video_id}'])
-                caption_file = self.temp_dir / f'{video_id}.{lang}.vtt'
+                caption_file = self.temp_dir / f'{video_id}.{selected_lang}.vtt'
                 if caption_file.exists():
                     return caption_file.read_text(encoding='utf-8')
         except Exception as e:
@@ -136,4 +179,4 @@ class YouTubeExtractor(BaseExtractor):
                 'metadata': metadata
             }
         
-        raise Exception("Failed to extract content from YouTube video") 
+        raise Exception("Failed to extract content from YouTube video")

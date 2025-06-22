@@ -34,7 +34,7 @@ def test_translator_config_loaded(tmp_path):
     finally:
         os.chdir(cwd)
 
-    assert cfg.translator.model == "gpt-3"
+    assert cfg.translator.model == "gpt-4.1-mini"
     assert cfg.translator.temperature == 0.5
     assert cfg.translator.prompt == "t:{text}"
 
@@ -72,7 +72,7 @@ def test_proofreader_config_loaded(tmp_path):
     finally:
         os.chdir(cwd)
 
-    assert cfg.proofreader.model == "p1"
+    assert cfg.proofreader.model == "gpt-4.1-mini"
     assert cfg.proofreader.style == "fancy"
     assert cfg.proofreader.temperature == 0.2
     assert cfg.proofreader.prompt == "P {style}"

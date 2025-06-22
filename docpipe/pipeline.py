@@ -1,7 +1,7 @@
 from typing import Any, Dict, List
 
 from .config import PipelineConfig
-from .processors import Translator, Proofreader, Evaluator, Fixer
+from .processors import Translator, Proofreader, Evaluator, Fixer, SpellChecker
 from .processors.evaluator import EvaluationResult
 from .utils import split_into_chunks
 
@@ -13,11 +13,13 @@ def _process_chunk(
     proofreader: Proofreader,
     evaluator: Evaluator,
     fixer: Fixer,
+    spellchecker: SpellChecker,
 ) -> Dict[str, Any]:
     """Process a single text chunk through the pipeline."""
     retries = 0
     prev_quality = 0.0
     metadata: Dict[str, Any] = {}
+    
     while True:
         trans = translator.process(text)
         text = trans["text"]
@@ -31,21 +33,34 @@ def _process_chunk(
         quality: float = eval_result["quality_score"]
         metadata.update(eval_result)
 
+        # 品質が閾値を上回った場合は成功
         if quality >= cfg.quality_threshold:
             break
 
+        # 最大リトライ回数に達した場合は停止
         if retries >= cfg.max_retries:
             break
 
-        improvement = quality - prev_quality
-        if improvement < cfg.min_improvement:
-            break
+        # 品質が閾値を下回っている場合は、最大リトライ回数まで試行
+        # 改善判定をより柔軟にする
+        if retries > 0:  # 最初のリトライ以外で改善判定
+            improvement = quality - prev_quality
+            # 改善が負の場合のみ停止（悪化した場合）
+            # 小さな改善でも継続する
+            if improvement < -0.01:  # 大幅な悪化の場合のみ停止
+                break
 
         fix_result = fixer.process(text)
         text = fix_result["text"]
 
         prev_quality = quality
         retries += 1
+
+    # 品質が閾値未満の場合のみSpellCheckerを実行
+    if quality < spellchecker.quality_threshold:
+        spell_result = spellchecker.process(text, quality)
+        text = spell_result["text"]
+        metadata.update(spell_result.get("metadata", {}))
 
     metadata["retries"] = retries
 
@@ -60,6 +75,7 @@ def process_text(
     proofreader: Proofreader,
     evaluator: Evaluator,
     fixer: Fixer,
+    spellchecker: SpellChecker,
     max_tokens: int = 2048,
 ) -> Dict[str, Any]:
     """Run text through translation, proofreading, evaluation and fixing.
@@ -73,7 +89,7 @@ def process_text(
 
     if len(chunks) == 1:
         return _process_chunk(
-            chunks[0], cfg, translator, proofreader, evaluator, fixer
+            chunks[0], cfg, translator, proofreader, evaluator, fixer, spellchecker
         )
 
     all_text: List[str] = []
@@ -82,7 +98,7 @@ def process_text(
     retry_sum = 0
 
     for chunk in chunks:
-        result = _process_chunk(chunk, cfg, translator, proofreader, evaluator, fixer)
+        result = _process_chunk(chunk, cfg, translator, proofreader, evaluator, fixer, spellchecker)
         all_text.append(result["text"])
         m = result["metadata"]
         meta_list.append(m)

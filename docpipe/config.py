@@ -8,24 +8,24 @@ except ModuleNotFoundError:  # pragma: no cover - optional
 from pydantic import BaseModel
 
 class PipelineConfig(BaseModel):
-    quality_threshold: float = 0.85
+    quality_threshold: float = 0.75
     max_retries: int = 3
-    min_improvement: float = 0.01
+    min_improvement: float = 0.005
     language_tool_threshold: float = 0.02
     bleu_threshold: float = 35.0
 
 class LLMConfig(BaseModel):
     profile: str = "default"  # "default" or "local"
-    model: str = "gpt-4"
+    model: str = "gpt-4.1-mini"
     temperature: float = 0.7
 
 class TranslatorConfig(BaseModel):
-    model: str = "gpt-4"
+    model: str = "gpt-4.1-mini"
     temperature: float = 0.7
     prompt: str = "Translate the following text to {target_lang}:\n{text}"
 
 class ProofreaderConfig(BaseModel):
-    model: str = "gpt-4o"
+    model: str = "gpt-4.1-mini"
     style: str = "general"
     temperature: float = 0.0
     prompt: str = (

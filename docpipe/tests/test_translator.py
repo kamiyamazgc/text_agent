@@ -17,13 +17,22 @@ def _dummy_openai_module(result: str = "翻訳済み"):
 
 
 def _capture_openai_module(store: dict):
-    class DummyChatCompletion:
+    class DummyCompletions:
         @staticmethod
         def create(model, messages, temperature=0.0):
             store["prompt"] = messages[0]["content"]
-            return {"choices": [{"message": {"content": "翻訳済み"}}]}
-
-    return types.SimpleNamespace(ChatCompletion=DummyChatCompletion)
+            class DummyMessage:
+                content = "翻訳済み"
+            class DummyChoice:
+                message = DummyMessage()
+            class DummyResponse:
+                choices = [DummyChoice()]
+            return DummyResponse()
+    class DummyChat:
+        completions = DummyCompletions
+    class DummyOpenAI:
+        chat = DummyChat()
+    return DummyOpenAI()
 
 
 def test_translate(monkeypatch):
@@ -44,10 +53,9 @@ def test_detect_language_japanese(monkeypatch):
 
 def test_custom_prompt(monkeypatch):
     store = {}
-    monkeypatch.setattr(
-        "docpipe.processors.translator.openai",
-        _capture_openai_module(store),
-    )
+    dummy_openai = _capture_openai_module(store)
+    monkeypatch.setattr("docpipe.processors.translator.openai", dummy_openai)
+    monkeypatch.setattr("docpipe.processors.translator.OpenAI", lambda: dummy_openai)
     tr = Translator(prompt="P: {text} -> {target_lang}")
     tr.translate("Hello", "fr")
     assert store["prompt"] == "P: Hello -> fr"

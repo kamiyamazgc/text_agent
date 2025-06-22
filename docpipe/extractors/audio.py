@@ -14,11 +14,12 @@ class AudioExtractor(BaseExtractor):
 
     SUPPORTED_EXTENSIONS: Tuple[str, ...] = (".mp3", ".wav", ".m4a")
 
-    def __init__(self, model: str = "large", language: Optional[str] = None) -> None:
+    def __init__(self, model: str = "large", language: Optional[str] = None, include_timestamps: bool = False) -> None:
         if whisper is None:
             raise ImportError("openai-whisper is required for audio extraction")
         self.model_name = model
         self.language = language
+        self.include_timestamps = include_timestamps
         self.whisper_model = whisper.load_model(model)
 
     def can_handle(self, source: str) -> bool:
@@ -37,20 +38,25 @@ class AudioExtractor(BaseExtractor):
             verbose=False,
         )
 
-        segments = result.get("segments", [])
-        transcript_lines = []
-        for idx, seg in enumerate(segments, 1):
-            start = seg.get("start", 0.0)
-            end = seg.get("end", 0.0)
-            text = seg.get("text", "").strip()
-            speaker = f"speaker_{(idx % 2) + 1}"  # TODO: real diarization
-            transcript_lines.append(f"[{start:.2f}-{end:.2f}] {speaker}: {text}")
-
-        text = "\n".join(transcript_lines) if transcript_lines else result.get("text", "")
+        # タイムスタンプを含めるかどうかで処理を分岐
+        if self.include_timestamps:
+            segments = result.get("segments", [])
+            transcript_lines = []
+            for idx, seg in enumerate(segments, 1):
+                start = seg.get("start", 0.0)
+                end = seg.get("end", 0.0)
+                text = seg.get("text", "").strip()
+                speaker = f"speaker_{(idx % 2) + 1}"  # TODO: real diarization
+                transcript_lines.append(f"[{start:.2f}-{end:.2f}] {speaker}: {text}")
+            text = "\n".join(transcript_lines) if transcript_lines else result.get("text", "")
+        else:
+            # タイムスタンプなし：純粋なテキストのみ
+            text = result.get("text", "").strip()
 
         metadata = {
             "source_type": "audio",
             "file_name": audio_path.name,
             "model": self.model_name,
+            "include_timestamps": self.include_timestamps,
         }
         return {"text": text, "metadata": metadata}

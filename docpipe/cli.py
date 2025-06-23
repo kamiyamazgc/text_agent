@@ -152,7 +152,9 @@ def process(sources: List[str], config: Optional[str], output_dir: Optional[str]
             # Fallback to source-based slug
             meaningful_name = re.sub(r"[^a-zA-Z0-9_-]", "_", source.split("/")[-1])
         
-        output_file = cfg.output_dir / f"{timestamp}_{index_counter:03d}_{meaningful_name}.txt"
+        output_file = cfg.output_dir / (
+            f"{timestamp}_{index_counter:03d}_{meaningful_name}{cfg.output_extension}"
+        )
         output_file.parent.mkdir(parents=True, exist_ok=True)
         output_file.write_text(result['text'], encoding='utf-8')
 

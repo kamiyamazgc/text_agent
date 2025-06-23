@@ -14,16 +14,18 @@ class Translator:
 
     def __init__(
         self,
-        model: str = "gpt-4.1-mini",
+        model: str = "gpt-4",
         temperature: float = 0.7,
-        prompt: str = "Translate the following text to {target_lang}:\n{text}",
+        prompt: str = (
+            "Translate the following text to {target_lang}:\n{text}\n"
+            "翻訳結果のみを返してください。"
+        ),
     ) -> None:
         if openai is None:
             raise ImportError("openai is required for Translator")
         self.model = model
         self.temperature = temperature
         self.prompt = prompt
-        self.client = OpenAI()
 
     def detect_language(self, text: str) -> str:
         """Enhanced language detection for multiple languages."""
@@ -62,7 +64,10 @@ class Translator:
             return text
         
         # カスタムプロンプトまたはデフォルトプロンプトを使用
-        default_prompt = "Translate the following text to {target_lang}:\n{text}"
+        default_prompt = (
+            "Translate the following text to {target_lang}:\n{text}\n"
+            "翻訳結果のみを返してください。"
+        )
         if self.prompt == default_prompt:
             # デフォルトプロンプトの場合は詳細版を使用
             prompt = f"""以下のテキストを{target_lang}に翻訳してください。
@@ -72,16 +77,26 @@ class Translator:
 テキスト:
 {text}
 
+翻訳結果のみを返してください。
 翻訳:"""
         else:
             # カスタムプロンプトの場合は元の処理を使用
             prompt = self.prompt.format(target_lang=target_lang, text=text)
         
-        resp = self.client.chat.completions.create(
-            model=self.model,
-            messages=[{"role": "user", "content": prompt}],
-            temperature=self.temperature,
-        )
+        if hasattr(openai, "ChatCompletion"):
+            resp = openai.ChatCompletion.create(
+                model=self.model,
+                messages=[{"role": "user", "content": prompt}],
+                temperature=self.temperature,
+            )
+        else:
+            resp = openai.chat.completions.create(
+                model=self.model,
+                messages=[{"role": "user", "content": prompt}],
+                temperature=self.temperature,
+            )
+        if isinstance(resp, dict):
+            return resp["choices"][0]["message"]["content"].strip()
         return resp.choices[0].message.content.strip()
 
     def process(self, text: str) -> Dict[str, Any]:

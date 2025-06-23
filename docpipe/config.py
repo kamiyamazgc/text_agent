@@ -8,7 +8,7 @@ except ModuleNotFoundError:  # pragma: no cover - optional
 from pydantic import BaseModel
 
 class PipelineConfig(BaseModel):
-    quality_threshold: float = 0.75
+    quality_threshold: float = 0.85
     max_retries: int = 3
     min_improvement: float = 0.005
     language_tool_threshold: float = 0.02
@@ -20,17 +20,21 @@ class LLMConfig(BaseModel):
     temperature: float = 0.7
 
 class TranslatorConfig(BaseModel):
-    model: str = "gpt-4.1-mini"
+    model: str = "gpt-4"
     temperature: float = 0.7
-    prompt: str = "Translate the following text to {target_lang}:\n{text}"
+    prompt: str = (
+        "Translate the following text to {target_lang}:\n{text}\n"
+        "翻訳結果のみを返してください。"
+    )
 
 class ProofreaderConfig(BaseModel):
-    model: str = "gpt-4.1-mini"
+    model: str = "gpt-4o"
     style: str = "general"
     temperature: float = 0.0
     prompt: str = (
         "Proofread the following text. Fix grammar, style, and readability "
-        "issues in {style} style. Return only the corrected text."
+        "issues in {style} style. 文の意味を変えないこと。未知の用語はそのまま残すこと。"
+        "結果だけを出力してください。"
     )
 
 class WhisperConfig(BaseModel):
@@ -53,7 +57,11 @@ class Config(BaseModel):
             raise ImportError("PyYAML is required to load configuration files")
         with open(path, "r", encoding="utf-8") as f:
             data = yaml.safe_load(f)
-        return cls(**data)
+        cfg = cls(**data)
+        # force default models regardless of file values for consistency
+        cfg.translator.model = "gpt-4.1-mini"
+        cfg.proofreader.model = "gpt-4.1-mini"
+        return cfg
 
     @classmethod
     def load(cls, path: Optional[str] = None) -> "Config":

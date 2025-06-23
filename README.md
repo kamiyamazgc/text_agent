@@ -13,8 +13,8 @@ A unified document conversion framework that transforms various input sources in
 - **Plain Text**: TXT and Markdown files
 
 ### Quality Assurance & Processing
-- **Intelligent Translation**: Multi-language to Japanese translation
-- **Grammar Checking**: LanguageTool integration for error detection
+- **Intelligent Translation**: Multi-language to Japanese translation (translator returns only the translated text)
+- **Grammar Checking**: LanguageTool integration for error detection. Proofreader keeps the original meaning, leaves unknown terms untouched, and outputs only the corrected text.
 - **Readability Scoring**: LLM-based quality evaluation
 - **Automatic Retry**: Smart retry logic for quality improvement
 - **Text Fixing**: Mechanical fixes for common transcription errors
@@ -129,15 +129,15 @@ llm:
   temperature: 0.7
 
 translator:
-  model: "gpt-4.1-mini"
+  model: "gpt-4"
   temperature: 0.7
-  prompt: "Translate the following text to {target_lang}:\n{text}"
+  prompt: "Translate the following text to {target_lang}:\n{text}\n翻訳結果のみを返してください。"
 
 proofreader:
-  model: "gpt-4.1-mini"
+  model: "gpt-4o"
   style: "general"
   temperature: 0.0
-  prompt: "Proofread the following text. Fix grammar, style, and readability issues in {style} style. Return only the corrected text."
+  prompt: "Proofread the following text. Fix grammar, style, and readability issues in {style} style. 文の意味を変えないこと。未知の用語はそのまま残すこと。結果だけを出力してください。"
 
 whisper:
   model: "large"

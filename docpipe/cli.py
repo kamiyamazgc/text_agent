@@ -117,7 +117,7 @@ def process(sources: List[str], config: Optional[str], output_dir: Optional[str]
         # Run processing pipeline with quality control
         pipeline_result = process_text(
             text,
-            cfg.pipeline,
+            cfg,
             translator,
             proofreader,
             evaluator,

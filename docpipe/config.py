@@ -31,6 +31,7 @@ class ProofreaderConfig(BaseModel):
     model: str = "gpt-4o"
     style: str = "general"
     temperature: float = 0.0
+    enabled: bool = True
     prompt: str = (
         "Proofread the following text. Fix grammar, style, and readability "
         "issues in {style} style. 文の意味を変えないこと。未知の用語はそのまま残すこと。"

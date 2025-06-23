@@ -137,6 +137,7 @@ proofreader:
   model: "gpt-4o"
   style: "general"
   temperature: 0.0
+  enabled: true
   prompt: "Proofread the following text. Fix grammar, style, and readability issues in {style} style. 文の意味を変えないこと。未知の用語はそのまま残すこと。結果だけを出力してください。"
 
 whisper:
@@ -163,7 +164,7 @@ log_dir: "logs"
   - `temperature`: Sampling temperature
 
 - **translator**: Translation step settings
-- **proofreader**: Proofreading step settings
+- **proofreader**: Proofreading step settings (`enabled` to skip)
 - **whisper**: Audio transcription options
 
 ## Processing Pipeline

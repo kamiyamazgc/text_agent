@@ -5,7 +5,7 @@ sys.path.insert(0, os.path.abspath(os.path.join(os.path.dirname(__file__), "..",
 
 from docpipe.pipeline import process_text  # noqa: E402
 
-from docpipe.config import PipelineConfig  # noqa: E402
+from docpipe.config import Config, PipelineConfig  # noqa: E402
 from docpipe.processors.spellchecker import SpellChecker
 
 
@@ -48,7 +48,8 @@ class DummyFixer:
 
 
 def test_improvement_and_threshold():
-    cfg = PipelineConfig(quality_threshold=0.8, max_retries=3, min_improvement=0.05)
+    cfg = Config()
+    cfg.pipeline = PipelineConfig(quality_threshold=0.8, max_retries=3, min_improvement=0.05)
     translator = DummyTranslator()
     proofreader = DummyProofreader([0.4, 0.6, 0.9])
     evaluator = DummyEvaluator([0.4, 0.65, 0.85])
@@ -61,7 +62,8 @@ def test_improvement_and_threshold():
 
 
 def test_min_improvement_breaks_loop():
-    cfg = PipelineConfig(quality_threshold=0.9, max_retries=5, min_improvement=0.1)
+    cfg = Config()
+    cfg.pipeline = PipelineConfig(quality_threshold=0.9, max_retries=5, min_improvement=0.1)
     # 改善が小さく、大幅な悪化がない場合のテスト
     # 新しいロジックでは大幅な悪化（-0.01未満）の場合のみ停止
     proofreader = DummyProofreader([0.4, 0.45, 0.44, 0.43, 0.42, 0.41])  # 徐々に悪化
@@ -78,7 +80,8 @@ def test_min_improvement_breaks_loop():
 
 
 def test_long_text_chunking():
-    cfg = PipelineConfig()
+    cfg = Config()
+    cfg.pipeline = PipelineConfig()
 
     class CTranslator:
         def __init__(self):
@@ -117,3 +120,20 @@ def test_long_text_chunking():
     assert translator.calls == 5  # SpellChecker分も含めて5回
     assert result["text"].strip() == long_text
     assert len(result["metadata"]["chunks"]) == 5
+
+
+def test_skip_proofreader_when_disabled():
+    cfg = Config()
+    cfg.pipeline = PipelineConfig()
+    cfg.proofreader.enabled = False
+
+    translator = DummyTranslator()
+    proofreader = DummyProofreader([0.4])
+    evaluator = DummyEvaluator([0.9])
+    fixer = DummyFixer()
+    spellchecker = SpellChecker(quality_threshold=0.3)
+
+    result = process_text("text", cfg, translator, proofreader, evaluator, fixer, spellchecker)
+
+    assert proofreader.idx == 0
+    assert result["metadata"]["quality_score"] == 0.9

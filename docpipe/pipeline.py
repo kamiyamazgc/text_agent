@@ -17,6 +17,8 @@ def _process_chunk(
 ) -> Dict[str, Any]:
     """Process a single text chunk through the pipeline."""
     prev_quality = 0.0
+    prev_err_rate = None
+    prev_readability = None
     metadata: Dict[str, Any] = {}
 
     for retries in range(cfg.pipeline.max_retries + 1):
@@ -25,7 +27,9 @@ def _process_chunk(
         metadata.update(trans.get("metadata", {}))
 
         if cfg.proofreader.enabled:
-            pf = proofreader.process(text)
+            pf = proofreader.process(
+                text, error_rate=prev_err_rate, readability=prev_readability
+            )
             text = pf["text"]
             metadata["proofread_quality"] = pf.get("quality_score")
 
@@ -42,6 +46,9 @@ def _process_chunk(
 
         eval_result["quality_score"] = quality
         metadata.update(eval_result)
+
+        prev_err_rate = eval_result.get("grammar_error_rate")
+        prev_readability = eval_result.get("readability_score")
 
         # 品質が閾値を上回った場合は成功
         if quality >= cfg.pipeline.quality_threshold:

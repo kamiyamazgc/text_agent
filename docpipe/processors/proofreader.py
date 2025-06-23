@@ -5,7 +5,7 @@ except Exception:  # pragma: no cover - optional dependency
     openai = None  # type: ignore
     OpenAI = None  # type: ignore
 
-from typing import Dict, Any
+from typing import Dict, Any, Optional
 
 
 class Proofreader:
@@ -29,9 +29,21 @@ class Proofreader:
         self.temperature = temperature
         self.prompt = prompt
 
-    def proofread(self, text: str) -> str:
+    def proofread(
+        self,
+        text: str,
+        error_rate: Optional[float] = None,
+        readability: Optional[float] = None,
+    ) -> str:
         """Return text corrected by ChatGPT."""
         prompt = self.prompt.format(style=self.style)
+        metrics: list[str] = []
+        if error_rate is not None:
+            metrics.append(f"grammar error rate {error_rate:.2%}")
+        if readability is not None:
+            metrics.append(f"readability score {readability:.2f}")
+        if metrics:
+            prompt += " Current metrics: " + ", ".join(metrics) + "."
         if hasattr(openai, "ChatCompletion"):
             resp = openai.ChatCompletion.create(
                 model=self.model,
@@ -54,8 +66,13 @@ class Proofreader:
             return resp["choices"][0]["message"]["content"].strip()
         return resp.choices[0].message.content.strip()
 
-    def process(self, text: str) -> Dict[str, Any]:
+    def process(
+        self,
+        text: str,
+        error_rate: Optional[float] = None,
+        readability: Optional[float] = None,
+    ) -> Dict[str, Any]:
         """Proofread text and return corrections with a simple quality score."""
-        corrected = self.proofread(text)
+        corrected = self.proofread(text, error_rate=error_rate, readability=readability)
         quality_score = 1.0 if corrected == text else 0.95
         return {"text": corrected, "quality_score": quality_score}

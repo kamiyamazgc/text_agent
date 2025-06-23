@@ -6,6 +6,7 @@ sys.path.insert(0, os.path.abspath(os.path.join(os.path.dirname(__file__), "..",
 from docpipe.pipeline import process_text  # noqa: E402
 
 from docpipe.config import PipelineConfig  # noqa: E402
+from docpipe.processors.spellchecker import SpellChecker
 
 
 class DummyTranslator:
@@ -44,13 +45,6 @@ class DummyFixer:
         return {"text": text + f"_fix{self.calls}", "changed": True}
 
 
-class DummySpellChecker:
-    def __init__(self, quality_threshold=0.95):
-        self.calls = 0
-        self.quality_threshold = quality_threshold
-    def process(self, text, quality_score):
-        self.calls += 1
-        return {"text": text, "metadata": {"spellcheck_used": False}}
 
 
 def test_improvement_and_threshold():
@@ -59,7 +53,7 @@ def test_improvement_and_threshold():
     proofreader = DummyProofreader([0.4, 0.6, 0.9])
     evaluator = DummyEvaluator([0.4, 0.65, 0.85])
     fixer = DummyFixer()
-    spellchecker = DummySpellChecker(quality_threshold=0.3)
+    spellchecker = SpellChecker(quality_threshold=0.3)
 
     result = process_text("bad", cfg, translator, proofreader, evaluator, fixer, spellchecker)
     assert result["metadata"]["quality_score"] >= 0.8
@@ -75,7 +69,7 @@ def test_min_improvement_breaks_loop():
     translator = DummyTranslator()
     fixer = DummyFixer()
     # SpellCheckerの閾値を高く設定して、実行されないようにする
-    spellchecker = DummySpellChecker(quality_threshold=0.3)
+    spellchecker = SpellChecker(quality_threshold=0.3)
 
     result = process_text("bad", cfg, translator, proofreader, evaluator, fixer, spellchecker)
     # 新しいロジックでは大幅な悪化がない限り最大リトライ回数まで実行
@@ -106,7 +100,7 @@ def test_long_text_chunking():
     proofreader = CProof()
     evaluator = CEval()
     fixer = DummyFixer()
-    spellchecker = DummySpellChecker(quality_threshold=0.3)
+    spellchecker = SpellChecker(quality_threshold=0.3)
 
     long_text = " ".join([f"w{i}" for i in range(25)])
     result = process_text(

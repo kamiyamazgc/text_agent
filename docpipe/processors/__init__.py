@@ -34,10 +34,3 @@ if Evaluator is not None:
 
 if SpellChecker is not None:
     __all__.append("SpellChecker")
-
-try:  # Optional dependency
-    from .spellchecker import SpellChecker
-except Exception:  # pragma: no cover - optional
-    SpellChecker = None  # type: ignore
-if SpellChecker is not None:
-    __all__.append("SpellChecker")

@@ -61,7 +61,7 @@ def test_proofreader_config_loaded(tmp_path):
     pytest.importorskip("yaml")
     cfg_file = tmp_path / "config.yaml"
     cfg_file.write_text(
-        "proofreader:\n  model: p1\n  style: fancy\n  temperature: 0.2\n  prompt: P {style}\n",
+        "proofreader:\n  model: p1\n  style: fancy\n  temperature: 0.2\n  enabled: false\n  prompt: P {style}\n",
         encoding="utf-8",
     )
 
@@ -76,6 +76,7 @@ def test_proofreader_config_loaded(tmp_path):
     assert cfg.proofreader.style == "fancy"
     assert cfg.proofreader.temperature == 0.2
     assert cfg.proofreader.prompt == "P {style}"
+    assert not cfg.proofreader.enabled
 
 
 def test_proofreader_default_values():
@@ -84,6 +85,7 @@ def test_proofreader_default_values():
     assert cfg.proofreader.style == "general"
     assert cfg.proofreader.temperature == 0.0
     assert "{style}" in cfg.proofreader.prompt
+    assert cfg.proofreader.enabled
 
 
 def test_whisper_config_loaded(tmp_path):

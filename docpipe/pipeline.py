@@ -1,6 +1,6 @@
 from typing import Any, Dict, List
 
-from .config import PipelineConfig
+from .config import Config
 from .processors import Translator, Proofreader, Evaluator, Fixer, SpellChecker
 from .processors.evaluator import EvaluationResult
 from .utils import split_into_chunks
@@ -8,7 +8,7 @@ from .utils import split_into_chunks
 
 def _process_chunk(
     text: str,
-    cfg: PipelineConfig,
+    cfg: Config,
     translator: Translator,
     proofreader: Proofreader,
     evaluator: Evaluator,
@@ -25,20 +25,21 @@ def _process_chunk(
         text = trans["text"]
         metadata.update(trans.get("metadata", {}))
 
-        pf = proofreader.process(text)
-        text = pf["text"]
-        metadata["proofread_quality"] = pf.get("quality_score")
+        if cfg.proofreader.enabled:
+            pf = proofreader.process(text)
+            text = pf["text"]
+            metadata["proofread_quality"] = pf.get("quality_score")
 
         eval_result: EvaluationResult = evaluator.evaluate(text)
         quality: float = eval_result["quality_score"]
         metadata.update(eval_result)
 
         # 品質が閾値を上回った場合は成功
-        if quality >= cfg.quality_threshold:
+        if quality >= cfg.pipeline.quality_threshold:
             break
 
         # 最大リトライ回数に達した場合は停止
-        if retries >= cfg.max_retries:
+        if retries >= cfg.pipeline.max_retries:
             break
 
         # 品質が閾値を下回っている場合は、最大リトライ回数まで試行
@@ -70,7 +71,7 @@ def _process_chunk(
 def process_text(
     text: str,
 
-    cfg: PipelineConfig,
+    cfg: Config,
     translator: Translator,
     proofreader: Proofreader,
     evaluator: Evaluator,

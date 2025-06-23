@@ -85,3 +85,72 @@ def test_cli_uses_whisper_model(monkeypatch):
     cli_module.process.callback(["dummy"], None, None)
 
     assert called["model"] == "custom"
+
+
+def test_cli_uses_progressbar(monkeypatch, tmp_path):
+    called = {}
+
+    class DummyProgress:
+        def __init__(self, iterable, label=None):
+            called["called"] = True
+            called["length"] = len(iterable)
+            called["label"] = label
+            self.iterable = iterable
+
+        def __enter__(self):
+            return self.iterable
+
+        def __exit__(self, exc_type, exc, tb):
+            pass
+
+    monkeypatch.setattr(cli_module.click, "progressbar", DummyProgress)
+    monkeypatch.setattr(cli_module, "_expand_sources", lambda s: ["a", "b"])
+
+    class DummyExtractor:
+        def __init__(self, *a, **k):
+            pass
+
+        def can_handle(self, source):
+            return False
+
+        def extract(self, source):
+            return {}
+
+    for name in [
+        "YouTubeExtractor",
+        "WebExtractor",
+        "PDFExtractor",
+        "OCRImageExtractor",
+        "AudioExtractor",
+        "PlainTextExtractor",
+    ]:
+        monkeypatch.setattr(cli_module, name, DummyExtractor)
+
+    class Dummy:
+        def __init__(self, *a, **k):
+            pass
+
+        def process(self, text):
+            return {"text": text, "metadata": {}}
+
+    class DummyEval(Dummy):
+        def evaluate(self, text, reference=None):
+            return {"quality_score": 1.0}
+
+    monkeypatch.setattr(cli_module, "Preprocessor", Dummy)
+    monkeypatch.setattr(cli_module, "Translator", Dummy)
+    monkeypatch.setattr(cli_module, "Proofreader", Dummy)
+    monkeypatch.setattr(cli_module, "Fixer", Dummy)
+    monkeypatch.setattr(cli_module, "Evaluator", DummyEval)
+    monkeypatch.setattr(cli_module, "SpellChecker", Dummy)
+    monkeypatch.setattr(cli_module, "process_text", lambda *a, **k: {"text": "", "metadata": {}})
+
+    cfg = cli_module.Config()
+    cfg.output_dir = tmp_path
+    monkeypatch.setattr(cli_module.Config, "load", classmethod(lambda cls, path=None: cfg))
+
+    cli_module.process.callback(["dummy1", "dummy2"], None, None)
+
+    assert called["called"]
+    assert called["length"] == 2
+    assert called["label"] == "Processing sources"

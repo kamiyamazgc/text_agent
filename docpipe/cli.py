@@ -108,78 +108,79 @@ def process(sources: List[str], config: Optional[str], output_dir: Optional[str]
     
     # Process each source
     index_counter = 1
-    for source in sources:
-        click.echo(f"Processing: {source}")
+    with click.progressbar(sources, label="Processing sources") as bar:
+        for source in bar:
+            click.echo(f"Processing: {source}")
 
-        # Try all extractors that claim they can handle the source
-        result = None
-        for extractor in [e for e in extractors if e.can_handle(source)]:
-            try:
-                result = extractor.extract(source)
-                break
-            except Exception as e:  # pragma: no cover - passthrough errors
-                click.echo(
-                    f"Extractor {extractor.__class__.__name__} failed: {e}",
-                    err=True,
-                )
+            # Try all extractors that claim they can handle the source
+            result = None
+            for extractor in [e for e in extractors if e.can_handle(source)]:
+                try:
+                    result = extractor.extract(source)
+                    break
+                except Exception as e:  # pragma: no cover - passthrough errors
+                    click.echo(
+                        f"Extractor {extractor.__class__.__name__} failed: {e}",
+                        err=True,
+                    )
 
-        if result is None:
-            click.echo(f"Error: No extractor succeeded for {source}", err=True)
-            continue
+            if result is None:
+                click.echo(f"Error: No extractor succeeded for {source}", err=True)
+                continue
 
-        # Preprocess text
-        text = preprocessor.process(result["text"])
+            # Preprocess text
+            text = preprocessor.process(result["text"])
 
-        # Run processing pipeline with quality control
-        pipeline_result = process_text(
-            text,
-            cfg,
-            translator,
-            proofreader,
-            evaluator,
-            fixer,
-            spellchecker,
-        )
-        result["text"] = pipeline_result["text"]
-        result["metadata"].update(pipeline_result["metadata"])
+            # Run processing pipeline with quality control
+            pipeline_result = process_text(
+                text,
+                cfg,
+                translator,
+                proofreader,
+                evaluator,
+                fixer,
+                spellchecker,
+            )
+            result["text"] = pipeline_result["text"]
+            result["metadata"].update(pipeline_result["metadata"])
 
-        # Save output
-        # Generate meaningful filename using metadata and yymmdd format
-        timestamp = datetime.now().strftime("%y%m%d")
-        
-        # Try to get meaningful name from metadata
-        meaningful_name = None
-        if "title" in result["metadata"] and result["metadata"]["title"]:
-            meaningful_name = result["metadata"]["title"]
-        elif "description" in result["metadata"] and result["metadata"]["description"]:
-            # Use first 50 chars of description if title not available
-            meaningful_name = result["metadata"]["description"][:50]
-        elif "filename" in result["metadata"] and result["metadata"]["filename"]:
-            meaningful_name = result["metadata"]["filename"]
-        
-        if meaningful_name:
-            # Clean the meaningful name for filename use
-            meaningful_name = re.sub(r"[^a-zA-Z0-9_\u3040-\u309F\u30A0-\u30FF\u4E00-\u9FAF]", "_", meaningful_name)
-            meaningful_name = meaningful_name.strip("_")
-            # Limit length to avoid too long filenames
-            if len(meaningful_name) > 50:
-                meaningful_name = meaningful_name[:50].rstrip("_")
-        else:
-            # Fallback to source-based slug
-            meaningful_name = re.sub(r"[^a-zA-Z0-9_-]", "_", source.split("/")[-1])
-        
-        output_file = cfg.output_dir / (
-            f"{timestamp}_{index_counter:03d}_{meaningful_name}{cfg.output_extension}"
-        )
-        output_file.parent.mkdir(parents=True, exist_ok=True)
-        output_file.write_text(result['text'], encoding='utf-8')
+            # Save output
+            # Generate meaningful filename using metadata and yymmdd format
+            timestamp = datetime.now().strftime("%y%m%d")
 
-        # Save metadata
-        meta_file = output_file.with_suffix('.json')
-        meta_file.write_text(json.dumps(result['metadata'], indent=2), encoding='utf-8')
+            # Try to get meaningful name from metadata
+            meaningful_name = None
+            if "title" in result["metadata"] and result["metadata"]["title"]:
+                meaningful_name = result["metadata"]["title"]
+            elif "description" in result["metadata"] and result["metadata"]["description"]:
+                # Use first 50 chars of description if title not available
+                meaningful_name = result["metadata"]["description"][:50]
+            elif "filename" in result["metadata"] and result["metadata"]["filename"]:
+                meaningful_name = result["metadata"]["filename"]
 
-        click.echo(f"Successfully processed: {output_file}")
-        index_counter += 1
+            if meaningful_name:
+                # Clean the meaningful name for filename use
+                meaningful_name = re.sub(r"[^a-zA-Z0-9_\u3040-\u309F\u30A0-\u30FF\u4E00-\u9FAF]", "_", meaningful_name)
+                meaningful_name = meaningful_name.strip("_")
+                # Limit length to avoid too long filenames
+                if len(meaningful_name) > 50:
+                    meaningful_name = meaningful_name[:50].rstrip("_")
+            else:
+                # Fallback to source-based slug
+                meaningful_name = re.sub(r"[^a-zA-Z0-9_-]", "_", source.split("/")[-1])
+
+            output_file = cfg.output_dir / (
+                f"{timestamp}_{index_counter:03d}_{meaningful_name}{cfg.output_extension}"
+            )
+            output_file.parent.mkdir(parents=True, exist_ok=True)
+            output_file.write_text(result['text'], encoding='utf-8')
+
+            # Save metadata
+            meta_file = output_file.with_suffix('.json')
+            meta_file.write_text(json.dumps(result['metadata'], indent=2), encoding='utf-8')
+
+            click.echo(f"Successfully processed: {output_file}")
+            index_counter += 1
 
 if __name__ == '__main__':
     cli() 

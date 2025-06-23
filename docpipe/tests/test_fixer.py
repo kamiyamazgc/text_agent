@@ -4,6 +4,7 @@ sys.path.insert(0, os.path.abspath(os.path.join(os.path.dirname(__file__), "..",
 
 from docpipe.processors.fixer import Fixer  # noqa: E402
 
+from docpipe.glossary import Glossary
 
 def test_remove_duplicate_lines():
     fixer = Fixer()
@@ -54,3 +55,11 @@ def test_disable_markdown_heading_conversion():
     text = "Overview\nText"
     result = fixer.process(text)
     assert result["text"] == "Overview\n\nText"
+
+def test_apply_glossary(tmp_path):
+    gfile = tmp_path / "gl.csv"
+    gfile.write_text("ja,en\n人工知能,AI\n", encoding="utf-8")
+    glossary = Glossary(str(gfile))
+    fixer = Fixer(glossary=glossary)
+    result = fixer.process("AIを使う")
+    assert "人工知能" in result["text"]

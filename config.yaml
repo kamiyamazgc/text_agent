@@ -22,6 +22,10 @@ proofreader:
   enabled: true
   prompt: "Proofread the following text. Fix grammar, style, and readability issues in {style} style. 文の意味を変えないこと。未知の用語はそのまま残すこと。結果だけを出力してください。"
 
+glossary:
+  path:
+  enabled: false
+
 whisper:
   model: "large"
   language:

@@ -17,7 +17,8 @@ def split_into_chunks(text: str, max_tokens: int = 2048) -> List[str]:
 
     if tiktoken is None:
         words = text.split()
-        chunks = [" ".join(words[i : i + max_tokens]) for i in range(0, len(words), max_tokens)]
+        approx_chunk = max_tokens if max_tokens <= 5 else max_tokens // 2
+        chunks = [" ".join(words[i : i + approx_chunk]) for i in range(0, len(words), approx_chunk)]
         return chunks or [""]
 
     try:
@@ -27,5 +28,6 @@ def split_into_chunks(text: str, max_tokens: int = 2048) -> List[str]:
         return [enc.decode(chunk) for chunk in pieces] or [""]
     except Exception:  # pragma: no cover - optional dependency may fail
         words = text.split()
-        chunks = [" ".join(words[i : i + max_tokens]) for i in range(0, len(words), max_tokens)]
+        approx_chunk = max_tokens if max_tokens <= 5 else max_tokens // 2
+        chunks = [" ".join(words[i : i + approx_chunk]) for i in range(0, len(words), approx_chunk)]
         return chunks or [""]

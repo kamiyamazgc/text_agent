@@ -288,6 +288,10 @@ class Fixer:
     def _is_heading(self, line: str) -> bool:
         """Check if a line is a heading."""
         line = line.strip()
+
+        # 数字を含む行は見出しとみなさない
+        if re.search(r"\d", line):
+            return False
         
         # 見出しのパターンを検出
         heading_patterns = [

@@ -46,8 +46,8 @@ def _process_chunk(
         if retries > 0:  # 最初のリトライ以外で改善判定
             improvement = quality - prev_quality
             # 改善が負の場合のみ停止（悪化した場合）
-            # 小さな改善でも継続する
-            if improvement < -0.01:  # 大幅な悪化の場合のみ停止
+            # 浮動小数の誤差を考慮してわずかな変動は無視
+            if improvement < -0.011:  # 大幅な悪化の場合のみ停止
                 break
 
         fix_result = fixer.process(text)

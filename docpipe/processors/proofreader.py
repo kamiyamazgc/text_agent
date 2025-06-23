@@ -13,12 +13,13 @@ class Proofreader:
 
     def __init__(
         self,
-        model: str = "gpt-4.1-mini",
+        model: str = "gpt-4o",
         style: str = "general",
         temperature: float = 0.0,
         prompt: str = (
             "Proofread the following text. Fix grammar, style, and readability "
-            "issues in {style} style. Return only the corrected text."
+            "issues in {style} style. 文の意味を変えないこと。未知の用語はそのまま残すこと。"
+            "結果だけを出力してください。"
         ),
     ) -> None:
         if openai is None:
@@ -27,19 +28,30 @@ class Proofreader:
         self.style = style
         self.temperature = temperature
         self.prompt = prompt
-        self.client = OpenAI()
 
     def proofread(self, text: str) -> str:
         """Return text corrected by ChatGPT."""
         prompt = self.prompt.format(style=self.style)
-        resp = self.client.chat.completions.create(
-            model=self.model,
-            messages=[
-                {"role": "system", "content": prompt},
-                {"role": "user", "content": text},
-            ],
-            temperature=self.temperature,
-        )
+        if hasattr(openai, "ChatCompletion"):
+            resp = openai.ChatCompletion.create(
+                model=self.model,
+                messages=[
+                    {"role": "system", "content": prompt},
+                    {"role": "user", "content": text},
+                ],
+                temperature=self.temperature,
+            )
+        else:
+            resp = openai.chat.completions.create(
+                model=self.model,
+                messages=[
+                    {"role": "system", "content": prompt},
+                    {"role": "user", "content": text},
+                ],
+                temperature=self.temperature,
+            )
+        if isinstance(resp, dict):
+            return resp["choices"][0]["message"]["content"].strip()
         return resp.choices[0].message.content.strip()
 
     def process(self, text: str) -> Dict[str, Any]:

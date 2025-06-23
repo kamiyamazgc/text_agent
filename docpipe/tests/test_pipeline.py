@@ -64,8 +64,7 @@ def test_improvement_and_threshold():
 def test_min_improvement_breaks_loop():
     cfg = Config()
     cfg.pipeline = PipelineConfig(quality_threshold=0.9, max_retries=5, min_improvement=0.1)
-    # 改善が小さく、大幅な悪化がない場合のテスト
-    # 新しいロジックでは大幅な悪化（-0.01未満）の場合のみ停止
+    # 改善幅が設定値以下の場合にループが停止することを確認
     proofreader = DummyProofreader([0.4, 0.45, 0.44, 0.43, 0.42, 0.41])  # 徐々に悪化
     evaluator = DummyEvaluator([0.4, 0.45, 0.44, 0.43, 0.42, 0.41])  # 徐々に悪化
     translator = DummyTranslator()
@@ -74,9 +73,9 @@ def test_min_improvement_breaks_loop():
     spellchecker = SpellChecker(quality_threshold=0.3)
 
     result = process_text("bad", cfg, translator, proofreader, evaluator, fixer, spellchecker)
-    # 新しいロジックでは大幅な悪化がない限り最大リトライ回数まで実行
-    assert result["metadata"]["retries"] == 5
-    assert result["metadata"]["quality_score"] == 0.41
+    # 2回目の評価で改善幅が0.05となり、min_improvement=0.1以下なので停止
+    assert result["metadata"]["retries"] == 1
+    assert result["metadata"]["quality_score"] == 0.45
 
 
 def test_long_text_chunking():

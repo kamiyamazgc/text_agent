@@ -41,13 +41,10 @@ def _process_chunk(
         if retries >= cfg.pipeline.max_retries:
             break
 
-        # 品質が閾値を下回っている場合は、最大リトライ回数まで試行
-        # 改善判定をより柔軟にする
-        if retries > 0:  # 最初のリトライ以外で改善判定
+        # リトライ時の改善幅が設定値以下なら停止
+        if retries > 0:
             improvement = quality - prev_quality
-            # 改善が負の場合のみ停止（悪化した場合）
-            # 浮動小数の誤差を考慮してわずかな変動は無視
-            if improvement < -0.011:  # 大幅な悪化の場合のみ停止
+            if improvement <= cfg.pipeline.min_improvement:
                 break
 
         fix_result = fixer.process(text)

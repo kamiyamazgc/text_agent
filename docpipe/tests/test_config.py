@@ -133,3 +133,23 @@ def test_output_extension_loaded(tmp_path):
     assert cfg.output_extension == ".txt"
 
 
+def test_markdown_heading_flag_default():
+    cfg = Config()
+    assert cfg.enable_markdown_headings
+
+
+def test_markdown_heading_flag_loaded(tmp_path):
+    pytest.importorskip("yaml")
+    cfg_file = tmp_path / "config.yaml"
+    cfg_file.write_text("enable_markdown_headings: false\n", encoding="utf-8")
+
+    cwd = os.getcwd()
+    os.chdir(tmp_path)
+    try:
+        cfg = Config.load()
+    finally:
+        os.chdir(cwd)
+
+    assert not cfg.enable_markdown_headings
+
+

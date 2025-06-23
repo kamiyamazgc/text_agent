@@ -39,4 +39,18 @@ def test_remove_llm_disclaimer_translation_note():
     fixer = Fixer()
     text = "こちらが翻訳です:\nHello"
     result = fixer.process(text)
-    assert result["text"] == "Hello"
+    assert result["text"] == "# Hello"
+
+
+def test_markdown_heading_conversion():
+    fixer = Fixer()
+    text = "Introduction\nThis is body."
+    result = fixer.process(text)
+    assert result["text"] == "# Introduction\n\nThis is body."
+
+
+def test_disable_markdown_heading_conversion():
+    fixer = Fixer(enable_markdown_headings=False)
+    text = "Overview\nText"
+    result = fixer.process(text)
+    assert result["text"] == "Overview\n\nText"

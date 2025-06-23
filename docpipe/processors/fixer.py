@@ -4,6 +4,9 @@ from typing import Any, Dict
 class Fixer:
     """Enhanced error correction agent with text structure improvements."""
 
+    def __init__(self, enable_markdown_headings: bool = True) -> None:
+        self.enable_markdown_headings = enable_markdown_headings
+
     def remove_duplicate_lines(self, text: str) -> str:
         lines = text.splitlines()
         cleaned: list[str] = []
@@ -33,8 +36,8 @@ class Fixer:
     def remove_llm_disclaimers(self, text: str) -> str:
         """Remove LLM-generated disclaimer phrases from the text."""
         patterns = [
-            r"ここでは.*?を修正しました",  # "Here we fixed ~"
-            r"こちらが翻訳です",         # "Here is the translation"
+            r"(?:^#\s*)?ここでは.*?を修正しました",  # "Here we fixed ~"
+            r"(?:^#\s*)?こちらが翻訳です",         # "Here is the translation"
         ]
 
         lines = text.splitlines()
@@ -292,10 +295,15 @@ class Fixer:
         result_lines = []
         
         for i, line in enumerate(lines):
+            is_heading = self._is_heading(line)
+
+            if is_heading and self.enable_markdown_headings and not line.lstrip().startswith("#"):
+                line = "# " + line.strip()
+
             result_lines.append(line)
-            
+
             # 見出しの後に改行を追加
-            if self._is_heading(line):
+            if is_heading:
                 # 次の行が空でない場合は空行を追加
                 if i + 1 < len(lines) and lines[i + 1].strip() != "":
                     result_lines.append("")

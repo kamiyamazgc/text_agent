@@ -1,3 +1,4 @@
+from pathlib import Path
 import os
 import pytest
 
@@ -153,3 +154,24 @@ def test_markdown_heading_flag_loaded(tmp_path):
     assert not cfg.enable_markdown_headings
 
 
+
+def test_glossary_config_loaded(tmp_path):
+    pytest.importorskip("yaml")
+    cfg_file = tmp_path / "config.yaml"
+    cfg_file.write_text("glossary:\n  path: terms.csv\n  enabled: true\n", encoding="utf-8")
+
+    cwd = os.getcwd()
+    os.chdir(tmp_path)
+    try:
+        cfg = Config.load()
+    finally:
+        os.chdir(cwd)
+
+    assert cfg.glossary.path == Path("terms.csv")
+    assert cfg.glossary.enabled
+
+
+def test_glossary_config_defaults():
+    cfg = Config()
+    assert cfg.glossary.path is None
+    assert not cfg.glossary.enabled

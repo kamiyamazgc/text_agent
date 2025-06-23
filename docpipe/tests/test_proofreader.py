@@ -5,6 +5,7 @@ import types
 sys.path.insert(0, os.path.abspath(os.path.join(os.path.dirname(__file__), "..", "..")))
 
 from docpipe.processors.proofreader import Proofreader  # noqa: E402
+from docpipe.glossary import Glossary
 
 
 def _dummy_openai_module(result: str = ""):
@@ -57,3 +58,15 @@ def test_custom_prompt(monkeypatch):
     pf = Proofreader(prompt="P {style}")
     pf.proofread("x")
     assert store["prompt"] == "P general"
+
+
+def test_proofreader_applies_glossary(monkeypatch, tmp_path):
+    gfile = tmp_path / "gl.csv"
+    gfile.write_text("ja,en\nマイクロソフト,Microsoft\n", encoding="utf-8")
+    glossary = Glossary(str(gfile))
+    monkeypatch.setattr(
+        "docpipe.processors.proofreader.openai", _dummy_openai_module("マイクロソフト")
+    )
+    pf = Proofreader(glossary=glossary)
+    result = pf.process("Microsoft")
+    assert "マイクロソフト" in result["text"]

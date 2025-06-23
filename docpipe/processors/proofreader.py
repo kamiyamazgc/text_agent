@@ -7,6 +7,8 @@ except Exception:  # pragma: no cover - optional dependency
 
 from typing import Dict, Any, Optional
 
+from ..glossary import Glossary
+
 
 class Proofreader:
     """Grammar and style proofreader using OpenAI ChatCompletion."""
@@ -21,6 +23,7 @@ class Proofreader:
             "issues in {style} style. 文の意味を変えないこと。未知の用語はそのまま残すこと。"
             "結果だけを出力してください。"
         ),
+        glossary: Optional[Glossary] = None,
     ) -> None:
         if openai is None:
             raise ImportError("openai is required for Proofreader")
@@ -28,6 +31,7 @@ class Proofreader:
         self.style = style
         self.temperature = temperature
         self.prompt = prompt
+        self.glossary = glossary
 
     def proofread(
         self,
@@ -63,8 +67,12 @@ class Proofreader:
                 temperature=self.temperature,
             )
         if isinstance(resp, dict):
-            return resp["choices"][0]["message"]["content"].strip()
-        return resp.choices[0].message.content.strip()
+            text = resp["choices"][0]["message"]["content"].strip()
+        else:
+            text = resp.choices[0].message.content.strip()
+        if self.glossary is not None:
+            text = self.glossary.replace(text)
+        return text
 
     def process(
         self,

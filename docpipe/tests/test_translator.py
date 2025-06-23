@@ -5,6 +5,7 @@ import types
 sys.path.insert(0, os.path.abspath(os.path.join(os.path.dirname(__file__), "..", "..")))
 
 from docpipe.processors.translator import Translator  # noqa: E402
+from docpipe.glossary import Glossary
 
 
 def _dummy_openai_module(result: str = "翻訳済み"):
@@ -59,3 +60,16 @@ def test_custom_prompt(monkeypatch):
     tr = Translator(prompt="P: {text} -> {target_lang}")
     tr.translate("Hello", "fr")
     assert store["prompt"] == "P: Hello -> fr"
+
+
+def test_translator_applies_glossary(monkeypatch, tmp_path):
+    gfile = tmp_path / "gl.csv"
+    gfile.write_text("ja,en\nパソコン,computer\n", encoding="utf-8")
+    glossary = Glossary(str(gfile))
+    monkeypatch.setattr(
+        "docpipe.processors.translator.openai",
+        _dummy_openai_module("パソコン"),
+    )
+    tr = Translator(glossary=glossary)
+    out = tr.process("computer")
+    assert out["text"] == "パソコン"

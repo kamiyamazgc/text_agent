@@ -41,6 +41,10 @@ class ProofreaderConfig(BaseModel):
 class WhisperConfig(BaseModel):
     model: str = "large"
     language: Optional[str] = None
+class GlossaryConfig(BaseModel):
+    path: Optional[Path] = None
+    enabled: bool = False
+
 
 class Config(BaseModel):
     pipeline: PipelineConfig = PipelineConfig()
@@ -48,6 +52,7 @@ class Config(BaseModel):
     translator: TranslatorConfig = TranslatorConfig()
     proofreader: ProofreaderConfig = ProofreaderConfig()
     whisper: WhisperConfig = WhisperConfig()
+    glossary: GlossaryConfig = GlossaryConfig()
     output_dir: Path = Path("output")
     temp_dir: Path = Path("temp")
     log_dir: Path = Path("logs")

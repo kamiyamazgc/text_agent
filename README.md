@@ -15,7 +15,7 @@ A unified document conversion framework that transforms various input sources in
 ### Quality Assurance & Processing
 - **Intelligent Translation**: Multi-language to Japanese translation (translator returns only the translated text)
 - **Grammar Checking**: LanguageTool integration for error detection. Proofreader keeps the original meaning, leaves unknown terms untouched, and outputs only the corrected text.
-- **Readability Scoring**: LLM-based quality evaluation with optional MeCab morphological analysis
+- **Readability Scoring**: LLM-based quality evaluation. Installing `fugashi` enables token-based metrics via MeCab; without it a simple character heuristic is used and may misjudge short texts.
 - **Accurate Language Detection**: Differentiates Japanese and Chinese using langdetect
 - **Automatic Retry**: Smart retry logic for quality improvement
 - **Text Fixing**: Mechanical fixes for common transcription errors
@@ -53,7 +53,12 @@ pip install -e .
 pip install marker-pdf
 ```
 
-5. Set up environment variables:
+5. Install `fugashi` with a dictionary to enable token-based readability scoring:
+```bash
+pip install "fugashi[unidic-lite]"
+```
+
+6. Set up environment variables:
 ```bash
 # Create .env file with your API keys
 echo "OPENAI_API_KEY=your_openai_api_key_here" > .env
@@ -250,7 +255,7 @@ pytest docpipe/tests/
 - Tesseract (for OCR features)
 - marker-pdf (for PDF extraction)
 - langdetect (for improved language detection)
-- fugashi/MeCab (for Japanese readability metrics)
+- Optional: `fugashi` with a MeCab dictionary for token-based Japanese readability scoring
 
 ## License
 
@@ -273,4 +278,4 @@ This project is licensed under the MIT License - see the [LICENSE](LICENSE) file
 - **Spell Checker Integration**: Optional spell correction for obvious errors
 - **Package Installation**: Easy global installation with `pip install -e .`
 - **Language Detection Upgrade**: Japanese and Chinese are distinguished using langdetect
-- **MeCab Readability Metrics**: Word-based scoring when fugashi is installed
+- **MeCab Readability Metrics**: Token-based scoring enabled by `fugashi`; falls back to a simple heuristic otherwise

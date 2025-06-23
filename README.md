@@ -209,7 +209,7 @@ text_agent/
 │   │   ├── proofreader.py
 │   │   ├── evaluator.py
 │   │   ├── fixer.py
-│   │   └── spellchecker.py
+│   │   └── spellchecker.py (optional)
 │   └── tests/              # Test suite
 ├── config.yaml             # Default configuration
 ├── requirements.txt        # Dependencies

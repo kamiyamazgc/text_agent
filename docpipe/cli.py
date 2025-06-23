@@ -75,24 +75,34 @@ def process(sources: List[str], config: Optional[str], output_dir: Optional[str]
         # TODO: Add other extractors
     ]
     preprocessor = Preprocessor()
-    translator = Translator(
-        cfg.translator.model,
-        cfg.translator.temperature,
-        cfg.translator.prompt,
-    )
-    proofreader = Proofreader(
-        cfg.proofreader.model,
-        cfg.proofreader.style,
-        cfg.proofreader.temperature,
-        cfg.proofreader.prompt,
-    )
-    evaluator = Evaluator()
     glossary = None
     if cfg.glossary.enabled and cfg.glossary.path:
         try:
             glossary = Glossary(str(cfg.glossary.path))
         except Exception as exc:  # pragma: no cover - CLI only
             click.echo(f"Failed to load glossary: {exc}")
+    translator = Translator(
+        cfg.translator.model,
+        cfg.translator.temperature,
+        cfg.translator.prompt,
+        glossary=glossary,
+    )
+    proofreader = Proofreader(
+        cfg.proofreader.model,
+        cfg.proofreader.style,
+        cfg.proofreader.temperature,
+        cfg.proofreader.prompt,
+        glossary=glossary,
+    )
+    evaluator = Evaluator()
+
+    glossary = None
+    if cfg.glossary.enabled and cfg.glossary.path:
+        try:
+            glossary = Glossary(str(cfg.glossary.path))
+        except Exception as exc:  # pragma: no cover - CLI only
+            click.echo(f"Failed to load glossary: {exc}")
+
     fixer = Fixer(cfg.enable_markdown_headings, glossary=glossary)
     spellchecker = SpellChecker()
     

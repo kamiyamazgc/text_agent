@@ -6,7 +6,9 @@ except Exception:  # pragma: no cover - optional dependency
     OpenAI = None  # type: ignore
 
 import re
-from typing import Any, Dict
+from typing import Any, Dict, Optional
+
+from ..glossary import Glossary
 
 
 class Translator:
@@ -20,12 +22,14 @@ class Translator:
             "Translate the following text to {target_lang}:\n{text}\n"
             "翻訳結果のみを返してください。"
         ),
+        glossary: Optional[Glossary] = None,
     ) -> None:
         if openai is None:
             raise ImportError("openai is required for Translator")
         self.model = model
         self.temperature = temperature
         self.prompt = prompt
+        self.glossary = glossary
 
     def detect_language(self, text: str) -> str:
         """Enhanced language detection for multiple languages."""
@@ -96,8 +100,12 @@ class Translator:
                 temperature=self.temperature,
             )
         if isinstance(resp, dict):
-            return resp["choices"][0]["message"]["content"].strip()
-        return resp.choices[0].message.content.strip()
+            text = resp["choices"][0]["message"]["content"].strip()
+        else:
+            text = resp.choices[0].message.content.strip()
+        if self.glossary is not None:
+            text = self.glossary.replace(text)
+        return text
 
     def process(self, text: str) -> Dict[str, Any]:
         src_lang = self.detect_language(text)

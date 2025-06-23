@@ -60,8 +60,19 @@ class Evaluator:
         return "en"
 
     def grammar_error_rate(self, text: str) -> float:
+        """Return grammar error rate using token count heuristics."""
         matches = self.tool.check(text)
-        tokens = max(len(text.split()), 1)
+        language = self.detect_language(text)
+
+        if language == "ja":
+            if self.tagger is not None:
+                tokens = len([tok.surface for tok in self.tagger(text)])
+            else:
+                tokens = len(re.findall(r"\S", text))
+        else:
+            tokens = len(text.split())
+
+        tokens = max(tokens, 1)
         return len(matches) / tokens
 
     def readability_score_japanese(self, text: str) -> float:

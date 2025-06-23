@@ -48,6 +48,7 @@ def test_evaluate_no_reference(monkeypatch):
     monkeypatch.setattr(
         "docpipe.processors.evaluator.sacrebleu", _dummy_sacrebleu_module()
     )
+    monkeypatch.setattr("docpipe.processors.evaluator.Tagger", None)
     ev = Evaluator()
     result = ev.evaluate("This text is fine.")
     assert result["grammar_error_rate"] == 0.0
@@ -61,6 +62,7 @@ def test_evaluate_with_reference(monkeypatch):
     monkeypatch.setattr(
         "docpipe.processors.evaluator.sacrebleu", _dummy_sacrebleu_module(50.0)
     )
+    monkeypatch.setattr("docpipe.processors.evaluator.Tagger", None)
     ev = Evaluator()
     result = ev.evaluate("Translated text", reference="Reference text")
     assert result["bleu_score"] == 50.0
@@ -74,6 +76,7 @@ def test_detect_language_chinese(monkeypatch):
         "docpipe.processors.evaluator.lang_detect",
         _dummy_langdetect("zh-cn"),
     )
+    monkeypatch.setattr("docpipe.processors.evaluator.Tagger", None)
     ev = Evaluator()
     assert ev.detect_language("这是中文。") == "zh"
 
@@ -90,5 +93,36 @@ def test_readability_japanese_with_tagger(monkeypatch):
     ev = Evaluator()
     score = ev.readability_score_japanese("これは テスト です。")
     assert 0.0 <= score <= 1.0
+
+
+def test_grammar_error_rate_japanese_with_tagger(monkeypatch):
+    monkeypatch.setattr(
+        "docpipe.processors.evaluator.lt", _dummy_language_tool_module()
+    )
+    monkeypatch.setattr(
+        "docpipe.processors.evaluator.lang_detect",
+        _dummy_langdetect("ja"),
+    )
+    monkeypatch.setattr("docpipe.processors.evaluator.Tagger", lambda: DummyTagger())
+    ev = Evaluator()
+    text = "これは error を含む 文です。"
+    rate = ev.grammar_error_rate(text)
+    assert rate == 1 / 4
+
+
+def test_grammar_error_rate_japanese_no_tagger(monkeypatch):
+    monkeypatch.setattr(
+        "docpipe.processors.evaluator.lt", _dummy_language_tool_module()
+    )
+    monkeypatch.setattr(
+        "docpipe.processors.evaluator.lang_detect",
+        _dummy_langdetect("ja"),
+    )
+    monkeypatch.setattr("docpipe.processors.evaluator.Tagger", None)
+    ev = Evaluator()
+    text = "これはerrorを含む文です。"
+    tokens = len([c for c in text if not c.isspace()])
+    rate = ev.grammar_error_rate(text)
+    assert rate == 1 / tokens
 
 

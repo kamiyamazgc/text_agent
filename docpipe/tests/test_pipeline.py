@@ -18,22 +18,33 @@ class DummyProofreader:
     def __init__(self, scores):
         self.scores = scores
         self.idx = 0
+        self.received = []
 
-    def process(self, text):
+    def process(self, text, error_rate=None, readability=None):
+        self.received.append((error_rate, readability))
         score = self.scores[self.idx]
         self.idx += 1
         return {"text": text, "quality_score": score}
 
 
 class DummyEvaluator:
-    def __init__(self, scores):
+    def __init__(self, scores, errs=None, reads=None):
         self.scores = scores
+        self.errs = errs or [None] * len(scores)
+        self.reads = reads or [None] * len(scores)
         self.idx = 0
 
     def evaluate(self, text, reference=None):
         score = self.scores[self.idx]
+        err = self.errs[self.idx]
+        read = self.reads[self.idx]
         self.idx += 1
-        return {"quality_score": score}
+        result = {"quality_score": score}
+        if err is not None:
+            result["grammar_error_rate"] = err
+        if read is not None:
+            result["readability_score"] = read
+        return result
 
 
 class DummyFixer:
@@ -66,7 +77,11 @@ def test_min_improvement_breaks_loop():
     cfg.pipeline = PipelineConfig(quality_threshold=0.9, max_retries=5, min_improvement=0.1)
     # 改善幅が設定値以下の場合にループが停止することを確認
     proofreader = DummyProofreader([0.4, 0.45, 0.44, 0.43, 0.42, 0.41])  # 徐々に悪化
-    evaluator = DummyEvaluator([0.4, 0.45, 0.44, 0.43, 0.42, 0.41])  # 徐々に悪化
+    evaluator = DummyEvaluator(
+        [0.4, 0.45, 0.44, 0.43, 0.42, 0.41],
+        errs=[0.01, 0.015, 0.02, 0.025, 0.03, 0.035],
+        reads=[0.6, 0.55, 0.5, 0.45, 0.4, 0.35],
+    )  # 徐々に悪化
     translator = DummyTranslator()
     fixer = DummyFixer()
     # SpellCheckerの閾値を高く設定して、実行されないようにする
@@ -76,6 +91,8 @@ def test_min_improvement_breaks_loop():
     # 2回目の評価で改善幅が0.05となり、min_improvement=0.1以下なので停止
     assert result["metadata"]["retries"] == 1
     assert result["metadata"]["quality_score"] == 0.45
+    assert proofreader.received[0] == (None, None)
+    assert proofreader.received[1] == (0.01, 0.6)
 
 
 def test_long_text_chunking():
@@ -91,7 +108,7 @@ def test_long_text_chunking():
             return {"text": text, "metadata": {}}
 
     class CProof:
-        def process(self, text):
+        def process(self, text, **kwargs):
             return {"text": text, "quality_score": 1.0}
 
     class CEval:
@@ -182,3 +199,23 @@ def test_bleu_threshold_penalty():
 
     result = process_text("text", cfg, translator, proofreader, evaluator, fixer, spellchecker)
     assert result["metadata"]["quality_score"] == 0.0
+
+
+def test_proofreader_receives_metrics():
+    cfg = Config()
+    cfg.pipeline = PipelineConfig(quality_threshold=0.9, max_retries=2, min_improvement=0.05)
+    translator = DummyTranslator()
+    proofreader = DummyProofreader([0.4, 0.95])
+    evaluator = DummyEvaluator(
+        [0.4, 0.95],
+        errs=[0.3, 0.1],
+        reads=[0.5, 0.9],
+    )
+    fixer = DummyFixer()
+    spellchecker = SpellChecker(quality_threshold=0.3)
+
+    result = process_text("bad", cfg, translator, proofreader, evaluator, fixer, spellchecker)
+
+    assert result["metadata"]["retries"] == 1
+    assert proofreader.received[0] == (None, None)
+    assert proofreader.received[1] == (0.3, 0.5)

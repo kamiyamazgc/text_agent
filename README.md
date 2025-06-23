@@ -98,12 +98,15 @@ text-agent process --output-dir output/ "input.pdf"
 
 ### Output File Naming
 
-Files are saved with the format: `{YYMMDD}_{sequence:03d}_{meaningful_name}.txt`
+Files are saved with the format:
+`{YYMMDD}_{sequence:03d}_{meaningful_name}{output_extension}`
 
 Examples:
-- `250115_001_OpenAI_GPT4_1_発表.txt`
-- `250115_002_YouTube動画の文字起こし.txt`
-- `250115_003_技術文書.txt`
+- `250115_001_OpenAI_GPT4_1_発表.md`
+- `250115_002_YouTube動画の文字起こし.md`
+- `250115_003_技術文書.md`
+
+Set `output_extension` in `config.yaml` to change the extension (e.g. `.txt`).
 
 The meaningful name is extracted from metadata in this priority order:
 1. Title from source
@@ -147,6 +150,7 @@ whisper:
 output_dir: "output"
 temp_dir: "temp"
 log_dir: "logs"
+output_extension: ".md"
 ```
 
 ### Configuration Options

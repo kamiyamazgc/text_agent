@@ -113,3 +113,23 @@ def test_whisper_default_values():
     assert cfg.whisper.language is None
 
 
+def test_output_extension_default():
+    cfg = Config()
+    assert cfg.output_extension == ".md"
+
+
+def test_output_extension_loaded(tmp_path):
+    pytest.importorskip("yaml")
+    cfg_file = tmp_path / "config.yaml"
+    cfg_file.write_text("output_extension: .txt\n", encoding="utf-8")
+
+    cwd = os.getcwd()
+    os.chdir(tmp_path)
+    try:
+        cfg = Config.load()
+    finally:
+        os.chdir(cwd)
+
+    assert cfg.output_extension == ".txt"
+
+

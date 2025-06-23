@@ -51,6 +51,7 @@ class Config(BaseModel):
     output_dir: Path = Path("output")
     temp_dir: Path = Path("temp")
     log_dir: Path = Path("logs")
+    output_extension: str = ".md"
 
     @classmethod
     def from_yaml(cls, path: str) -> "Config":
@@ -59,6 +60,8 @@ class Config(BaseModel):
         with open(path, "r", encoding="utf-8") as f:
             data = yaml.safe_load(f)
         cfg = cls(**data)
+        # ensure new option has default when missing
+        cfg.output_extension = data.get("output_extension", ".md")
         # force default models regardless of file values for consistency
         cfg.translator.model = "gpt-4.1-mini"
         cfg.proofreader.model = "gpt-4.1-mini"
@@ -84,4 +87,5 @@ class Config(BaseModel):
                 data = self.model_dump()  # Pydantic v2
             except AttributeError:  # pragma: no cover - Pydantic v1 fallback
                 data = self.dict()  # type: ignore[attr-defined]
+            data["output_extension"] = self.output_extension
             yaml.dump(data, f, allow_unicode=True)

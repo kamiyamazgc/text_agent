@@ -29,3 +29,4 @@ whisper:
 output_dir: "output"
 temp_dir: "temp"
 log_dir: "logs"
+output_extension: ".md"

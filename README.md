@@ -47,7 +47,12 @@ source venv311/bin/activate  # On Windows: venv311\Scripts\activate
 pip install -e .
 ```
 
-4. Set up environment variables:
+4. Install the Marker PDF backend (optional but recommended for PDFs):
+```bash
+pip install marker-pdf
+```
+
+5. Set up environment variables:
 ```bash
 # Create .env file with your API keys
 echo "OPENAI_API_KEY=your_openai_api_key_here" > .env
@@ -58,6 +63,7 @@ echo "OPENAI_API_KEY=your_openai_api_key_here" > .env
 1. Clone and setup as above, then install dependencies:
 ```bash
 pip install -r requirements.txt
+pip install marker-pdf  # optional for PDF extraction
 ```
 
 ## Usage
@@ -241,6 +247,7 @@ pytest docpipe/tests/
 - OpenAI API key (for LLM features)
 - Java (for LanguageTool)
 - Tesseract (for OCR features)
+- marker-pdf (for PDF extraction)
 
 ## License
 

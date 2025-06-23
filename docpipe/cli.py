@@ -9,7 +9,6 @@ from datetime import datetime
 from .config import Config
 from .extractors.youtube import YouTubeExtractor
 from .extractors.pdf import PDFExtractor
-from .extractors.ocr_pdf import OCRPDFExtractor
 from .extractors.ocr_image import OCRImageExtractor
 from .extractors.web import WebExtractor
 from .extractors.audio import AudioExtractor

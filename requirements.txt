@@ -3,7 +3,9 @@ tiktoken>=0.5.0
 yt-dlp>=2023.12.30
 openai-whisper>=20231117
 trafilatura>=1.6.1
+# marker-pdf provides PDF text extraction
 marker-pdf>=0.1.0
+# pypdfium2 can be installed for fallback extraction
 # marker-ocr-pdf>=0.1.0  # このパッケージは利用できないためコメントアウト
 language-tool-python>=2.7.1
 sacrebleu>=2.3.1

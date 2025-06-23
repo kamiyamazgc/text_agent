@@ -6,16 +6,13 @@ try:
 except Exception:  # pragma: no cover - optional dependency
     pypdfium2 = None  # type: ignore
 
-try:  # optional helper for tests
-    from . import marker_pdf  # type: ignore
-except Exception:  # pragma: no cover - optional dependency
-    marker_pdf = None  # type: ignore
+from . import marker_pdf
 
 from .base import BaseExtractor
 
 
 class PDFExtractor(BaseExtractor):
-    """Extractor for digital PDFs using pypdfium2"""
+    """Extractor for digital PDFs using marker-pdf with pypdfium2 fallback."""
 
     def can_handle(self, source: str) -> bool:
         """Check if the source is a PDF file"""
@@ -27,8 +24,8 @@ class PDFExtractor(BaseExtractor):
         if not pdf_path.exists():
             raise FileNotFoundError(f"PDF not found: {source}")
 
-        # test helper: allow marker_pdf backend if available
-        if marker_pdf is not None:
+        # Prefer marker-pdf backend if available
+        try:
             text, layout = marker_pdf.to_text_with_layout(str(pdf_path))
             metadata = {
                 "source_type": "pdf",
@@ -36,9 +33,13 @@ class PDFExtractor(BaseExtractor):
                 "layout": layout,
             }
             return {"text": text, "metadata": metadata}
+        except ImportError:
+            pass
 
         if pypdfium2 is None:
-            raise ImportError("pypdfium2 is required for PDF extraction")
+            raise ImportError(
+                "marker-pdf or pypdfium2 is required for PDF extraction"
+            )
 
         try:
             # Open PDF and extract text

@@ -25,3 +25,18 @@ def test_fix_common_typos():
     text = "teh quick brown fox"
     result = fixer.process(text)
     assert "the quick brown fox" == result["text"]
+
+
+def test_remove_llm_disclaimer_fix_note():
+    fixer = Fixer()
+    text = "ここでは文章を修正しました。\n実際の内容です。"
+    result = fixer.process(text)
+    assert "ここでは" not in result["text"]
+    assert result["text"].startswith("実際の内容です")
+
+
+def test_remove_llm_disclaimer_translation_note():
+    fixer = Fixer()
+    text = "こちらが翻訳です:\nHello"
+    result = fixer.process(text)
+    assert result["text"] == "Hello"

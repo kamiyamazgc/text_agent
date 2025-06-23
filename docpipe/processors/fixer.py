@@ -30,6 +30,23 @@ class Fixer:
         text = re.sub(r" {2,}", " ", text)
         return text
 
+    def remove_llm_disclaimers(self, text: str) -> str:
+        """Remove LLM-generated disclaimer phrases from the text."""
+        patterns = [
+            r"ここでは.*?を修正しました",  # "Here we fixed ~"
+            r"こちらが翻訳です",         # "Here is the translation"
+        ]
+
+        lines = text.splitlines()
+        cleaned_lines = []
+        for line in lines:
+            if any(re.search(p, line) for p in patterns):
+                continue
+            cleaned_lines.append(line)
+
+        cleaned_text = "\n".join(cleaned_lines)
+        return cleaned_text.strip()
+
     def fix_speech_recognition_errors(self, text: str) -> str:
         """Fix common speech recognition errors in Japanese text."""
         # 音声認識でよく発生する誤認識パターン
@@ -343,7 +360,10 @@ class Fixer:
         
         # 4. 構造の改善（最後に実行して他の処理で上書きされないようにする）
         text = self.improve_structure(text)
-        
+
+        # 5. LLM 生成物のディスクレーマーを削除
+        text = self.remove_llm_disclaimers(text)
+
         changed = text != original
         return {"text": text, "changed": changed}
 

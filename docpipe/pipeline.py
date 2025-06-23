@@ -16,11 +16,10 @@ def _process_chunk(
     spellchecker: SpellChecker,
 ) -> Dict[str, Any]:
     """Process a single text chunk through the pipeline."""
-    retries = 0
     prev_quality = 0.0
     metadata: Dict[str, Any] = {}
-    
-    while True:
+
+    for retries in range(cfg.pipeline.max_retries + 1):
         trans = translator.process(text)
         text = trans["text"]
         metadata.update(trans.get("metadata", {}))
@@ -55,7 +54,6 @@ def _process_chunk(
         text = fix_result["text"]
 
         prev_quality = quality
-        retries += 1
 
     # 品質が閾値未満の場合のみSpellCheckerを実行
     if quality < spellchecker.quality_threshold:

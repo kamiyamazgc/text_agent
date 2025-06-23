@@ -1,3 +1,4 @@
+import itertools
 import re
 from typing import Any, Dict
 
@@ -8,12 +9,8 @@ class Fixer:
         self.enable_markdown_headings = enable_markdown_headings
 
     def remove_duplicate_lines(self, text: str) -> str:
-        lines = text.splitlines()
-        cleaned: list[str] = []
-        for line in lines:
-            if not cleaned or line != cleaned[-1]:
-                cleaned.append(line)
-        return "\n".join(cleaned)
+        lines = (next(g) for _, g in itertools.groupby(text.splitlines()))
+        return "\n".join(lines)
 
     def balance_parentheses(self, text: str) -> str:
         diff = text.count("(") - text.count(")")

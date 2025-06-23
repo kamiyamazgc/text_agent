@@ -23,32 +23,20 @@ class Preprocessor:
 
     def restore_line_breaks(self, text: str) -> str:
         """Restore line breaks by merging lines inside paragraphs."""
-        lines = text.splitlines()
-        restored: list[str] = []
-        punct = (".", "?", "!", "。", "？", "！", "：", ":")
-        for line in lines:
-            stripped = line.strip()
-            if not stripped:
-                if restored and restored[-1] != "":
-                    restored.append("")
-                continue
+        # Join lines that are not terminated by punctuation or part of a blank
+        # line. This merges lines within a single paragraph while leaving
+        # paragraph breaks intact.
+        text = re.sub(r"(?<![.!?。？！：:\n])\n(?!\n)", " ", text)
 
-            if (
-                restored
-                and restored[-1]
-                and not restored[-1].endswith(punct)
-            ):
-                restored[-1] += " " + stripped
-            else:
-                if (
-                    restored
-                    and restored[-1]
-                    and restored[-1].endswith(punct)
-                    and (len(restored) == 1 or restored[-2] != "")
-                ):
-                    restored.append("")
-                restored.append(stripped)
-        return "\n".join(restored)
+        # Ensure that a single newline following punctuation becomes a blank
+        # line to separate paragraphs.
+        text = re.sub(r"(?<=[.!?。？！：:])\n(?!\n)", "\n\n", text)
+
+        # Collapse runs of blank lines down to a single blank line for
+        # consistency.
+        text = re.sub(r"\n{2,}", "\n\n", text)
+
+        return text.strip()
 
     def standardize_format(self, text: str) -> str:
         """Standardize newlines and spacing."""

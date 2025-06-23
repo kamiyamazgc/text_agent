@@ -13,6 +13,7 @@ from .extractors.ocr_image import OCRImageExtractor
 from .extractors.web import WebExtractor
 from .extractors.audio import AudioExtractor
 from .extractors.plain import PlainTextExtractor
+from .glossary import Glossary
 from .processors import (
     Preprocessor,
     Translator,
@@ -86,7 +87,13 @@ def process(sources: List[str], config: Optional[str], output_dir: Optional[str]
         cfg.proofreader.prompt,
     )
     evaluator = Evaluator()
-    fixer = Fixer(cfg.enable_markdown_headings)
+    glossary = None
+    if cfg.glossary.enabled and cfg.glossary.path:
+        try:
+            glossary = Glossary(str(cfg.glossary.path))
+        except Exception as exc:  # pragma: no cover - CLI only
+            click.echo(f"Failed to load glossary: {exc}")
+    fixer = Fixer(cfg.enable_markdown_headings, glossary=glossary)
     spellchecker = SpellChecker()
     
     # Process each source

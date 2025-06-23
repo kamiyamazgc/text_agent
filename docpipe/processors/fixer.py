@@ -1,12 +1,19 @@
 import itertools
 import re
-from typing import Any, Dict
+from typing import Any, Dict, Optional
+
+from ..glossary import Glossary
 
 class Fixer:
     """Enhanced error correction agent with text structure improvements."""
 
-    def __init__(self, enable_markdown_headings: bool = True) -> None:
+    def __init__(
+        self,
+        enable_markdown_headings: bool = True,
+        glossary: Optional[Glossary] = None,
+    ) -> None:
         self.enable_markdown_headings = enable_markdown_headings
+        self.glossary = glossary
 
     def remove_duplicate_lines(self, text: str) -> str:
         lines = (next(g) for _, g in itertools.groupby(text.splitlines()))
@@ -46,6 +53,11 @@ class Fixer:
 
         cleaned_text = "\n".join(cleaned_lines)
         return cleaned_text.strip()
+
+    def apply_glossary(self, text: str) -> str:
+        if self.glossary is None:
+            return text
+        return self.glossary.replace(text)
 
     def fix_speech_recognition_errors(self, text: str) -> str:
         """Fix common speech recognition errors in Japanese text."""
@@ -369,6 +381,9 @@ class Fixer:
         # 5. LLM 生成物のディスクレーマーを削除
         text = self.remove_llm_disclaimers(text)
 
+        # 6. 用語集による置換
+        text = self.apply_glossary(text)
+
         changed = text != original
         return {"text": text, "changed": changed}
 
@@ -415,7 +430,10 @@ class Fixer:
         
         # 7. 構造の改善
         text = self.improve_structure(text)
-        
+
+        # 8. 用語集による置換
+        text = self.apply_glossary(text)
+
         changed = text != original
         return {"text": text, "changed": changed}
 

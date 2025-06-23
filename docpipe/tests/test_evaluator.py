@@ -29,6 +29,18 @@ def _dummy_sacrebleu_module(score: float = 100.0):
     return types.SimpleNamespace(corpus_bleu=corpus_bleu)
 
 
+def _dummy_langdetect(lang: str):
+    def detect(text: str) -> str:
+        return lang
+
+    return detect
+
+
+class DummyTagger:
+    def __call__(self, text: str):
+        return [types.SimpleNamespace(surface=w) for w in text.split()]
+
+
 def test_evaluate_no_reference(monkeypatch):
     monkeypatch.setattr(
         "docpipe.processors.evaluator.lt", _dummy_language_tool_module()
@@ -52,5 +64,31 @@ def test_evaluate_with_reference(monkeypatch):
     ev = Evaluator()
     result = ev.evaluate("Translated text", reference="Reference text")
     assert result["bleu_score"] == 50.0
+
+
+def test_detect_language_chinese(monkeypatch):
+    monkeypatch.setattr(
+        "docpipe.processors.evaluator.lt", _dummy_language_tool_module()
+    )
+    monkeypatch.setattr(
+        "docpipe.processors.evaluator.lang_detect",
+        _dummy_langdetect("zh-cn"),
+    )
+    ev = Evaluator()
+    assert ev.detect_language("这是中文。") == "zh"
+
+
+def test_readability_japanese_with_tagger(monkeypatch):
+    monkeypatch.setattr(
+        "docpipe.processors.evaluator.lt", _dummy_language_tool_module()
+    )
+    monkeypatch.setattr(
+        "docpipe.processors.evaluator.lang_detect",
+        _dummy_langdetect("ja"),
+    )
+    monkeypatch.setattr("docpipe.processors.evaluator.Tagger", lambda: DummyTagger())
+    ev = Evaluator()
+    score = ev.readability_score_japanese("これは テスト です。")
+    assert 0.0 <= score <= 1.0
 
 

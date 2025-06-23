@@ -1,5 +1,5 @@
 try:
-    import language_tool_python as lt
+    import language_tool_python as lt  # type: ignore
 except Exception:  # pragma: no cover - optional dependency
     lt = None  # type: ignore
 
@@ -7,6 +7,16 @@ try:
     import sacrebleu  # type: ignore
 except Exception:  # pragma: no cover - optional dependency
     sacrebleu = None  # type: ignore
+
+try:
+    from langdetect import detect as lang_detect  # type: ignore
+except Exception:  # pragma: no cover - optional dependency
+    lang_detect = None  # type: ignore
+
+try:
+    from fugashi import Tagger  # type: ignore
+except Exception:  # pragma: no cover - optional dependency
+    Tagger = None  # type: ignore
 
 import re
 from typing import Optional, TypedDict
@@ -26,14 +36,28 @@ class Evaluator:
         if lt is None:
             raise ImportError("language_tool_python is required for Evaluator")
         self.tool = lt.LanguageTool(language)
+        self.tagger = Tagger() if Tagger is not None else None
 
     def detect_language(self, text: str) -> str:
-        """Detect if text is Japanese or English."""
-        # 日本語文字パターン（ひらがな、カタカナ、漢字）
-        if re.search(r"[\u3040-\u30ff\u4e00-\u9fff]", text):
+        """Detect if text is Japanese, Chinese, or English."""
+        if lang_detect is not None:
+            try:
+                detected = lang_detect(text)
+                if detected.startswith("ja"):
+                    return "ja"
+                if detected.startswith("zh"):
+                    return "zh"
+                if detected.startswith("en"):
+                    return "en"
+            except Exception:  # pragma: no cover - best effort
+                pass
+
+        # Fallback regex detection
+        if re.search(r"[\u3040-\u30ff]", text):
             return "ja"
-        else:
-            return "en"
+        if re.search(r"[\u4e00-\u9fff]", text):
+            return "zh"
+        return "en"
 
     def grammar_error_rate(self, text: str) -> float:
         matches = self.tool.check(text)
@@ -44,6 +68,17 @@ class Evaluator:
         """Calculate readability score for Japanese text."""
         if not text.strip():
             return 1.0
+
+        if self.tagger is not None:
+            words = [tok.surface for tok in self.tagger(text)]
+            if not words:
+                return 1.0
+            sentences = [s for s in re.split(r'[。！？]', text) if s.strip()]
+            avg_word_len = sum(len(w) for w in words) / len(words)
+            avg_sentence_words = len(words) / max(len(sentences), 1)
+            word_len_score = 1.0 - min((avg_word_len - 2) / 6.0, 1.0)
+            sent_score = 1.0 - min((avg_sentence_words - 10) / 50.0, 1.0)
+            return max(0.0, min(1.0, (word_len_score + sent_score) / 2))
         
         # 文を分割（句点、感嘆符、疑問符で区切る）
         sentences = re.split(r'[。！？]', text)

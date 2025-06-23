@@ -15,7 +15,8 @@ A unified document conversion framework that transforms various input sources in
 ### Quality Assurance & Processing
 - **Intelligent Translation**: Multi-language to Japanese translation (translator returns only the translated text)
 - **Grammar Checking**: LanguageTool integration for error detection. Proofreader keeps the original meaning, leaves unknown terms untouched, and outputs only the corrected text.
-- **Readability Scoring**: LLM-based quality evaluation
+- **Readability Scoring**: LLM-based quality evaluation with optional MeCab morphological analysis
+- **Accurate Language Detection**: Differentiates Japanese and Chinese using langdetect
 - **Automatic Retry**: Smart retry logic for quality improvement
 - **Text Fixing**: Mechanical fixes for common transcription errors
 - **Spell Checking**: Optional spell correction for obvious errors
@@ -248,6 +249,8 @@ pytest docpipe/tests/
 - Java (for LanguageTool)
 - Tesseract (for OCR features)
 - marker-pdf (for PDF extraction)
+- langdetect (for improved language detection)
+- fugashi/MeCab (for Japanese readability metrics)
 
 ## License
 
@@ -269,3 +272,5 @@ This project is licensed under the MIT License - see the [LICENSE](LICENSE) file
 - **Python Code Preservation**: Maintains syntax integrity for code files
 - **Spell Checker Integration**: Optional spell correction for obvious errors
 - **Package Installation**: Easy global installation with `pip install -e .`
+- **Language Detection Upgrade**: Japanese and Chinese are distinguished using langdetect
+- **MeCab Readability Metrics**: Word-based scoring when fugashi is installed

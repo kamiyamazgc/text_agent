@@ -52,6 +52,7 @@ class Config(BaseModel):
     temp_dir: Path = Path("temp")
     log_dir: Path = Path("logs")
     output_extension: str = ".md"
+    enable_markdown_headings: bool = True
 
     @classmethod
     def from_yaml(cls, path: str) -> "Config":
@@ -62,6 +63,7 @@ class Config(BaseModel):
         cfg = cls(**data)
         # ensure new option has default when missing
         cfg.output_extension = data.get("output_extension", ".md")
+        cfg.enable_markdown_headings = data.get("enable_markdown_headings", True)
         # force default models regardless of file values for consistency
         cfg.translator.model = "gpt-4.1-mini"
         cfg.proofreader.model = "gpt-4.1-mini"

@@ -87,7 +87,7 @@ def process(sources: List[str], config: Optional[str], output_dir: Optional[str]
         cfg.proofreader.prompt,
     )
     evaluator = Evaluator()
-    fixer = Fixer()
+    fixer = Fixer(cfg.enable_markdown_headings)
     spellchecker = SpellChecker()
     
     # Process each source

@@ -159,7 +159,15 @@ class Evaluator:
     def bleu_score(self, text: str, reference: str) -> float:
         if sacrebleu is None:
             raise ImportError("sacrebleu is required for BLEU score")
-        result = sacrebleu.corpus_bleu([text], [[reference]])
+        tokenize = None
+        if self.detect_language(text) == "ja":
+            tokenize = "ja-mecab"
+
+        if tokenize is None:
+            result = sacrebleu.corpus_bleu([text], [[reference]])
+        else:
+            result = sacrebleu.corpus_bleu([text], [[reference]], tokenize=tokenize)
+
         return float(result.score)
 
     def evaluate(self, text: str, reference: Optional[str] = None) -> EvaluationResult:

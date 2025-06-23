@@ -136,3 +136,49 @@ def test_skip_proofreader_when_disabled():
 
     assert proofreader.idx == 0
     assert result["metadata"]["quality_score"] == 0.9
+
+
+def test_grammar_error_threshold_penalty():
+    cfg = Config()
+    cfg.pipeline = PipelineConfig(max_retries=0, language_tool_threshold=0.02)
+
+    translator = DummyTranslator()
+    proofreader = DummyProofreader([0.9])
+
+    class Eval:
+        def evaluate(self, text, reference=None):
+            return {
+                "grammar_error_rate": 0.05,
+                "bleu_score": None,
+                "quality_score": 0.95,
+            }
+
+    evaluator = Eval()
+    fixer = DummyFixer()
+    spellchecker = SpellChecker(quality_threshold=0.3)
+
+    result = process_text("text", cfg, translator, proofreader, evaluator, fixer, spellchecker)
+    assert result["metadata"]["quality_score"] == 0.0
+
+
+def test_bleu_threshold_penalty():
+    cfg = Config()
+    cfg.pipeline = PipelineConfig(max_retries=0, bleu_threshold=50.0)
+
+    translator = DummyTranslator()
+    proofreader = DummyProofreader([0.9])
+
+    class Eval:
+        def evaluate(self, text, reference=None):
+            return {
+                "grammar_error_rate": 0.0,
+                "bleu_score": 10.0,
+                "quality_score": 0.95,
+            }
+
+    evaluator = Eval()
+    fixer = DummyFixer()
+    spellchecker = SpellChecker(quality_threshold=0.3)
+
+    result = process_text("text", cfg, translator, proofreader, evaluator, fixer, spellchecker)
+    assert result["metadata"]["quality_score"] == 0.0

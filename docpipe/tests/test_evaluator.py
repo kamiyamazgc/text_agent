@@ -29,6 +29,18 @@ def _dummy_sacrebleu_module(score: float = 100.0):
     return types.SimpleNamespace(corpus_bleu=corpus_bleu)
 
 
+def _capture_sacrebleu_module(store: dict, score: float = 100.0):
+    class DummyResult:
+        def __init__(self, score: float) -> None:
+            self.score = score
+
+    def corpus_bleu(hypotheses, references, **kwargs):
+        store["tokenize"] = kwargs.get("tokenize")
+        return DummyResult(score)
+
+    return types.SimpleNamespace(corpus_bleu=corpus_bleu)
+
+
 def _dummy_langdetect(lang: str):
     def detect(text: str) -> str:
         return lang
@@ -124,5 +136,45 @@ def test_grammar_error_rate_japanese_no_tagger(monkeypatch):
     tokens = len([c for c in text if not c.isspace()])
     rate = ev.grammar_error_rate(text)
     assert rate == 1 / tokens
+
+
+def test_bleu_score_japanese_tokenizer(monkeypatch):
+    store = {}
+    monkeypatch.setattr(
+        "docpipe.processors.evaluator.lt", _dummy_language_tool_module()
+    )
+    monkeypatch.setattr(
+        "docpipe.processors.evaluator.sacrebleu",
+        _capture_sacrebleu_module(store, 80.0),
+    )
+    monkeypatch.setattr(
+        "docpipe.processors.evaluator.lang_detect",
+        _dummy_langdetect("ja"),
+    )
+    monkeypatch.setattr("docpipe.processors.evaluator.Tagger", None)
+    ev = Evaluator()
+    score = ev.bleu_score("翻訳されたテキスト", "参照テキスト")
+    assert score == 80.0
+    assert store["tokenize"] == "ja-mecab"
+
+
+def test_bleu_score_english_default(monkeypatch):
+    store = {}
+    monkeypatch.setattr(
+        "docpipe.processors.evaluator.lt", _dummy_language_tool_module()
+    )
+    monkeypatch.setattr(
+        "docpipe.processors.evaluator.sacrebleu",
+        _capture_sacrebleu_module(store, 40.0),
+    )
+    monkeypatch.setattr(
+        "docpipe.processors.evaluator.lang_detect",
+        _dummy_langdetect("en"),
+    )
+    monkeypatch.setattr("docpipe.processors.evaluator.Tagger", None)
+    ev = Evaluator()
+    score = ev.bleu_score("Translated text", "Reference text")
+    assert score == 40.0
+    assert store["tokenize"] is None
 
 

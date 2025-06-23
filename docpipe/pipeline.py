@@ -31,6 +31,16 @@ def _process_chunk(
 
         eval_result: EvaluationResult = evaluator.evaluate(text)
         quality: float = eval_result["quality_score"]
+
+        err_rate = eval_result.get("grammar_error_rate")
+        if err_rate is not None and err_rate > cfg.pipeline.language_tool_threshold:
+            quality = 0.0
+
+        bleu_score = eval_result.get("bleu_score")
+        if bleu_score is not None and bleu_score < cfg.pipeline.bleu_threshold:
+            quality = 0.0
+
+        eval_result["quality_score"] = quality
         metadata.update(eval_result)
 
         # 品質が閾値を上回った場合は成功

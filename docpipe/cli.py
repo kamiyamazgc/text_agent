@@ -1,6 +1,7 @@
 import click
 from pathlib import Path
 from typing import List, Optional
+from itertools import chain
 import json
 import re
 from datetime import datetime
@@ -26,21 +27,20 @@ from .pipeline import process_text
 
 def _expand_sources(source_paths: List[str]) -> List[str]:
     """Expand directory paths and special files into individual sources."""
-    expanded: List[str] = []
-    for src in source_paths:
+
+    def expand(src: str) -> List[str]:
         p = Path(src)
         if p.is_dir():
-            for child in p.iterdir():
-                if child.is_file():
-                    expanded.append(str(child))
-        elif p.is_file() and p.name == "urls.txt":
-            for line in p.read_text(encoding="utf-8").splitlines():
-                url = line.strip()
-                if url.lower().startswith("http://") or url.lower().startswith("https://"):
-                    expanded.append(url)
-        else:
-            expanded.append(src)
-    return expanded
+            return [str(c) for c in p.iterdir() if c.is_file()]
+        if p.is_file() and p.name == "urls.txt":
+            return [
+                line.strip()
+                for line in p.read_text(encoding="utf-8").splitlines()
+                if line.strip().startswith(("http://", "https://"))
+            ]
+        return [src]
+
+    return list(chain.from_iterable(expand(s) for s in source_paths))
 
 @click.group()
 def cli():

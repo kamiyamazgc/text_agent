@@ -3,6 +3,11 @@ import re
 from typing import Any, Dict, Optional
 
 from ..glossary import Glossary
+from ..utils.markdown_utils import (
+    is_markdown_file, 
+    extract_critical_markdown_blocks, 
+    restore_critical_markdown_blocks
+)
 
 class Fixer:
     """Enhanced error correction agent with text structure improvements."""
@@ -354,6 +359,10 @@ class Fixer:
     def process(self, text: str) -> Dict[str, Any]:
         original = text
         
+        # Markdownファイルの場合は特別な処理
+        if is_markdown_file(text):
+            return self._process_markdown_text(text)
+        
         # Pythonコードの場合は特別な処理
         if self._is_python_code(text):
             return self._process_python_code(text)
@@ -386,6 +395,41 @@ class Fixer:
 
         changed = text != original
         return {"text": text, "changed": changed}
+
+    def _process_markdown_text(self, text: str) -> Dict[str, Any]:
+        """Process Markdown text while preserving formatting."""
+        original = text
+        
+        # Markdownブロックを抽出して保護
+        processed_text, markdown_blocks = extract_critical_markdown_blocks(text)
+        
+        # テキストコンテンツのみに処理を適用
+        # 1. 基本的な修正
+        processed_text = self.remove_duplicate_lines(processed_text)
+        processed_text = self.balance_parentheses(processed_text)
+        processed_text = self.fix_common_typos(processed_text)
+        
+        # 2. 句読点の正規化
+        processed_text = self.normalize_punctuation(processed_text)
+        
+        # 3. 空白・改行の正規化
+        processed_text = self.normalize_line_breaks(processed_text)
+        processed_text = self.adjust_spacing(processed_text)
+        
+        # 4. Markdownファイルの場合は構造改善をスキップ（既にMarkdown構造があるため）
+        # processed_text = self.improve_structure(processed_text)
+
+        # 5. LLM 生成物のディスクレーマーを削除
+        processed_text = self.remove_llm_disclaimers(processed_text)
+
+        # 6. 用語集による置換
+        processed_text = self.apply_glossary(processed_text)
+        
+        # Markdownブロックを復元
+        processed_text = restore_critical_markdown_blocks(processed_text, markdown_blocks)
+
+        changed = processed_text != original
+        return {"text": processed_text, "changed": changed}
 
     def _is_speech_text(self, text: str) -> bool:
         """Check if the text appears to be speech recognition output."""

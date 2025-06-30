@@ -20,6 +20,7 @@ except Exception:  # pragma: no cover - optional dependency
 
 import re
 from typing import Optional, TypedDict
+from ..utils.markdown_utils import is_markdown_file, get_text_for_evaluation
 
 
 class EvaluationResult(TypedDict):
@@ -61,6 +62,10 @@ class Evaluator:
 
     def grammar_error_rate(self, text: str) -> float:
         """Return grammar error rate using token count heuristics."""
+        # For Markdown files, use text content only for evaluation
+        if is_markdown_file(text):
+            text = get_text_for_evaluation(text)
+        
         matches = self.tool.check(text)
         language = self.detect_language(text)
 
@@ -77,6 +82,10 @@ class Evaluator:
 
     def readability_score_japanese(self, text: str) -> float:
         """Calculate readability score for Japanese text."""
+        # For Markdown files, use text content only for evaluation
+        if is_markdown_file(text):
+            text = get_text_for_evaluation(text)
+            
         if not text.strip():
             return 1.0
 
@@ -140,6 +149,10 @@ class Evaluator:
 
     def readability_score_english(self, text: str) -> float:
         """Calculate readability score for English text."""
+        # For Markdown files, use text content only for evaluation
+        if is_markdown_file(text):
+            text = get_text_for_evaluation(text)
+            
         sentences = [s for s in text.split(".") if s.strip()]
         if not sentences:
             return 1.0
@@ -159,6 +172,13 @@ class Evaluator:
     def bleu_score(self, text: str, reference: str) -> float:
         if sacrebleu is None:
             raise ImportError("sacrebleu is required for BLEU score")
+        
+        # For Markdown files, use text content only for evaluation
+        if is_markdown_file(text):
+            text = get_text_for_evaluation(text)
+        if is_markdown_file(reference):
+            reference = get_text_for_evaluation(reference)
+            
         tokenize = None
         if self.detect_language(text) == "ja":
             tokenize = "ja-mecab"

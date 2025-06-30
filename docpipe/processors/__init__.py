@@ -1,5 +1,10 @@
 from .preprocessor import Preprocessor
 from .fixer import Fixer
+from .translator import Translator
+from .proofreader import Proofreader
+from .evaluator import Evaluator
+from .spellchecker import SpellChecker
+from .diff_processor import DiffProcessor
 
 try:  # Optional dependency
     from .translator import Translator
@@ -21,7 +26,15 @@ try:  # Optional dependency
 except Exception:  # pragma: no cover - optional
     SpellChecker = None  # type: ignore
 
-__all__ = ["Preprocessor", "Fixer"]
+__all__ = [
+    "Preprocessor",
+    "Fixer",
+    "Translator",
+    "Proofreader",
+    "Evaluator",
+    "SpellChecker",
+    "DiffProcessor"
+]
 
 if Translator is not None:
     __all__.append("Translator")

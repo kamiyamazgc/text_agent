@@ -1,14 +1,9 @@
+"""Marker PDF extractor for high-quality text extraction."""
+
 from pathlib import Path
-from typing import Tuple, List
+from typing import Tuple, List, Dict, Any
+import marker  # type: ignore
 
-try:
-    import marker_pdf  # type: ignore
-except Exception:  # pragma: no cover - optional dependency
-    marker_pdf = None  # type: ignore
-
-
-def to_text_with_layout(pdf_path: str) -> Tuple[str, List[str]]:
-    """Extract text and layout information using marker-pdf."""
-    if marker_pdf is None:
-        raise ImportError("marker-pdf is required for PDF extraction")
-    return marker_pdf.to_text_with_layout(Path(pdf_path))
+def to_text_with_layout(pdf_path: Path) -> Tuple[str, List[Dict[str, Any]]]:
+    """Extract text with layout information using marker-pdf."""
+    return marker.to_text_with_layout(pdf_path)

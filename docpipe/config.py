@@ -13,6 +13,7 @@ class PipelineConfig(BaseModel):
     min_improvement: float = 0.005
     language_tool_threshold: float = 0.02
     bleu_threshold: float = 35.0
+    diff_improvement_threshold: float = 0.7
 
 class LLMConfig(BaseModel):
     profile: str = "default"  # "default" or "local"
@@ -22,6 +23,7 @@ class LLMConfig(BaseModel):
 class TranslatorConfig(BaseModel):
     model: str = "gpt-4"
     temperature: float = 0.7
+    enabled: bool = True  # 翻訳の有効/無効を制御
     prompt: str = (
         "Translate the following text to {target_lang}:\n{text}\n"
         "翻訳結果のみを返してください。"
@@ -38,9 +40,19 @@ class ProofreaderConfig(BaseModel):
         "結果だけを出力してください。"
     )
 
+class DiffProcessorConfig(BaseModel):
+    enabled: bool = True
+    model: str = "gpt-4"
+    max_chunk_size: int = 2000
+    max_retries: int = 3
+    output_history: bool = True
+    history_dir: str = "output_history"
+    improvement_focus: str = "advanced_style"  # advanced_style, grammar_style, business_style
+
 class WhisperConfig(BaseModel):
     model: str = "large"
     language: Optional[str] = None
+
 class GlossaryConfig(BaseModel):
     path: Optional[Path] = None
     enabled: bool = False
@@ -51,6 +63,7 @@ class Config(BaseModel):
     llm: LLMConfig = LLMConfig()
     translator: TranslatorConfig = TranslatorConfig()
     proofreader: ProofreaderConfig = ProofreaderConfig()
+    diff_processor: DiffProcessorConfig = DiffProcessorConfig()
     whisper: WhisperConfig = WhisperConfig()
     glossary: GlossaryConfig = GlossaryConfig()
     output_dir: Path = Path("output")

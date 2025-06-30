@@ -48,28 +48,16 @@ class Proofreader:
             metrics.append(f"readability score {readability:.2f}")
         if metrics:
             prompt += " Current metrics: " + ", ".join(metrics) + "."
-        if hasattr(openai, "ChatCompletion"):
-            resp = openai.ChatCompletion.create(
-                model=self.model,
-                messages=[
-                    {"role": "system", "content": prompt},
-                    {"role": "user", "content": text},
-                ],
-                temperature=self.temperature,
-            )
-        else:
-            resp = openai.chat.completions.create(
-                model=self.model,
-                messages=[
-                    {"role": "system", "content": prompt},
-                    {"role": "user", "content": text},
-                ],
-                temperature=self.temperature,
-            )
-        if isinstance(resp, dict):
-            text = resp["choices"][0]["message"]["content"].strip()
-        else:
-            text = resp.choices[0].message.content.strip()
+        client = OpenAI()
+        resp = client.chat.completions.create(
+            model=self.model,
+            messages=[
+                {"role": "system", "content": prompt},
+                {"role": "user", "content": text},
+            ],
+            temperature=self.temperature,
+        )
+        text = resp.choices[0].message.content.strip()
         if self.glossary is not None:
             text = self.glossary.replace(text)
         return text

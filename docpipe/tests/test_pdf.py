@@ -12,7 +12,7 @@ def test_extract_with_layout(tmp_path, monkeypatch):
     fake_pdf.write_text("dummy")
 
     monkeypatch.setattr(
-        "docpipe.extractors.pdf.marker_pdf.to_text_with_layout",
+        "docpipe.extractors.pdf.marker.to_text_with_layout",
         lambda p: ("PDF TEXT", ["page1", "page2"]),
     )
 
@@ -30,7 +30,7 @@ def test_extract_missing_dependency(tmp_path, monkeypatch):
         raise ImportError("missing")
 
     monkeypatch.setattr(
-        "docpipe.extractors.pdf.marker_pdf.to_text_with_layout",
+        "docpipe.extractors.pdf.marker.to_text_with_layout",
         raise_import,
     )
     monkeypatch.setattr("docpipe.extractors.pdf.pypdfium2", None)

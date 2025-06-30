@@ -21,6 +21,7 @@ from .processors import (
     Evaluator,
     Fixer,
     SpellChecker,
+    DiffProcessor,
 )
 from .pipeline import process_text
 
@@ -124,20 +125,6 @@ def process(sources: List[str], config: Optional[str], output_dir: Optional[str]
             # Preprocess text
             text = preprocessor.process(result["text"])
 
-            # Run processing pipeline with quality control
-            pipeline_result = process_text(
-                text,
-                cfg,
-                translator,
-                proofreader,
-                evaluator,
-                fixer,
-                spellchecker,
-            )
-            result["text"] = pipeline_result["text"]
-            result["metadata"].update(pipeline_result["metadata"])
-
-            # Save output
             # Generate meaningful filename using metadata and yymmdd format
             timestamp = datetime.now().strftime("%y%m%d")
 
@@ -162,17 +149,107 @@ def process(sources: List[str], config: Optional[str], output_dir: Optional[str]
                 # Fallback to source-based slug
                 meaningful_name = re.sub(r"[^a-zA-Z0-9_-]", "_", source.split("/")[-1])
 
-            output_file = cfg.output_dir / (
-                f"{timestamp}_{index_counter:03d}_{meaningful_name}{cfg.output_extension}"
-            )
-            output_file.parent.mkdir(parents=True, exist_ok=True)
-            output_file.write_text(result['text'], encoding='utf-8')
+            # Create case-specific directory
+            case_dir = cfg.output_dir / f"{timestamp}_{index_counter:03d}_{meaningful_name}"
+            case_dir.mkdir(parents=True, exist_ok=True)
+            
+            # Create temp subdirectory for intermediate files
+            temp_dir = case_dir / "temp"
+            temp_dir.mkdir(exist_ok=True)
+
+            # Save original files based on source type
+            source_type = result["metadata"].get("source_type", "unknown")
+            
+            if source_type == "pdf":
+                # Save original PDF if available
+                if "file_name" in result["metadata"]:
+                    pdf_source = Path(source)
+                    if pdf_source.exists():
+                        pdf_dest = case_dir / "original.pdf"
+                        import shutil
+                        shutil.copy2(pdf_source, pdf_dest)
+                
+                # Save extracted text as original.txt
+                original_txt = case_dir / "original.txt"
+                original_txt.write_text(result["text"], encoding='utf-8')
+                
+                # If marker was used, save as original.md and copy images
+                if result["metadata"].get("extractor") == "marker":
+                    original_md = case_dir / "original.md"
+                    original_md.write_text(result["text"], encoding='utf-8')
+                    
+                    # Copy image files if available
+                    if "image_files" in result["metadata"] and "marker_output_dir" in result["metadata"]:
+                        marker_output_dir = Path(result["metadata"]["marker_output_dir"])
+                        image_files = result["metadata"]["image_files"]
+                        
+                        print(f"DEBUG: Copying {len(image_files)} image files to case directory")
+                        for image_path in image_files:
+                            image_source = Path(image_path)
+                            if image_source.exists():
+                                image_dest = case_dir / image_source.name
+                                import shutil
+                                shutil.copy2(image_source, image_dest)
+                                print(f"DEBUG: Copied {image_source.name} to {image_dest}")
+                            else:
+                                print(f"DEBUG: Image file not found: {image_path}")
+                    
+            elif source_type in ["web", "youtube"]:
+                # Save extracted text as original.txt
+                original_txt = case_dir / "original.txt"
+                original_txt.write_text(result["text"], encoding='utf-8')
+                
+            else:
+                # For other source types, save as original.txt
+                original_txt = case_dir / "original.txt"
+                original_txt.write_text(result["text"], encoding='utf-8')
 
             # Save metadata
-            meta_file = output_file.with_suffix('.json')
-            meta_file.write_text(json.dumps(result['metadata'], indent=2), encoding='utf-8')
+            meta_file = case_dir / "metadata.json"
+            meta_file.write_text(json.dumps(result["metadata"], indent=2), encoding='utf-8')
+            
+            click.echo(f"Saved original files to: {case_dir}")
 
-            click.echo(f"Successfully processed: {output_file}")
+            # Initialize DiffProcessor with case-specific temp directory
+            diff_processor = None
+            if cfg.diff_processor.enabled:
+                try:
+                    diff_processor = DiffProcessor(
+                        model=cfg.diff_processor.model,
+                        max_chunk_size=cfg.diff_processor.max_chunk_size,
+                        max_retries=cfg.diff_processor.max_retries,
+                        output_history=cfg.diff_processor.output_history,
+                        history_dir=cfg.diff_processor.history_dir,
+                        improvement_focus=cfg.diff_processor.improvement_focus,
+                        temp_dir=str(temp_dir),  # Pass case-specific temp directory
+                    )
+                    click.echo("DiffProcessor initialized successfully")
+                except Exception as e:
+                    click.echo(f"Failed to initialize DiffProcessor: {e}", err=True)
+
+            # Run processing pipeline with quality control
+            pipeline_result = process_text(
+                text,
+                cfg,
+                translator,
+                proofreader,
+                evaluator,
+                fixer,
+                spellchecker,
+                diff_processor,
+            )
+            result["text"] = pipeline_result["text"]
+            result["metadata"].update(pipeline_result["metadata"])
+
+            # Save final processed text
+            final_file = case_dir / "final.md"
+            final_file.write_text(result['text'], encoding='utf-8')
+
+            # Save final metadata
+            final_meta_file = case_dir / "final_metadata.json"
+            final_meta_file.write_text(json.dumps(result['metadata'], indent=2), encoding='utf-8')
+
+            click.echo(f"Successfully processed: {final_file}")
             index_counter += 1
 
 if __name__ == '__main__':

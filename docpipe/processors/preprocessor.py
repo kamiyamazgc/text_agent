@@ -1,5 +1,10 @@
 import re
 from typing import Dict
+from ..utils.markdown_utils import (
+    is_markdown_file, 
+    extract_critical_markdown_blocks, 
+    restore_critical_markdown_blocks
+)
 
 
 class Preprocessor:
@@ -8,9 +13,9 @@ class Preprocessor:
     OCR_CORRECTIONS: Dict[str, str] = {
         "ﬁ": "fi",
         "ﬂ": "fl",
-        "’": "'",
-        "“": '"',
-        "”": '"',
+        "'": "'",
+        """: '"',
+        """: '"',
         "—": "-",
         "–": "-",
     }
@@ -48,7 +53,23 @@ class Preprocessor:
 
     def process(self, text: str) -> str:
         """Run all preprocessing steps."""
-        text = self.correct_ocr_errors(text)
-        text = self.restore_line_breaks(text)
-        text = self.standardize_format(text)
-        return text
+        # Check if this is a Markdown file
+        if is_markdown_file(text):
+            # Extract Markdown blocks to protect them
+            processed_text, markdown_blocks = extract_critical_markdown_blocks(text)
+            
+            # Apply preprocessing to the text content only
+            processed_text = self.correct_ocr_errors(processed_text)
+            processed_text = self.restore_line_breaks(processed_text)
+            processed_text = self.standardize_format(processed_text)
+            
+            # Restore Markdown blocks
+            processed_text = restore_critical_markdown_blocks(processed_text, markdown_blocks)
+            
+            return processed_text
+        else:
+            # Original processing for non-Markdown files
+            text = self.correct_ocr_errors(text)
+            text = self.restore_line_breaks(text)
+            text = self.standardize_format(text)
+            return text

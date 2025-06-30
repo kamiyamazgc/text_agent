@@ -4,6 +4,7 @@ pipeline:
   min_improvement: 0.01
   language_tool_threshold: 0.02
   bleu_threshold: 35.0
+  diff_improvement_threshold: 0.95  # 閾値を0.95に上げてDiffProcessorを確実に発動させる
 
 llm:
   profile: "default"  # or "local"
@@ -11,16 +12,26 @@ llm:
   temperature: 0.7
 
 translator:
-  model: "gpt-4"
+  model: "gpt-4.1-mini"
   temperature: 0.7
+  enabled: true  # 翻訳を有効化
   prompt: "Translate the following text to {target_lang}:\n{text}\n翻訳結果のみを返してください。"
 
 proofreader:
-  model: "gpt-4o"
+  model: "gpt-4.1-mini"
   style: "general"
   temperature: 0.0
-  enabled: true
+  enabled: true  # 校正を有効化
   prompt: "Proofread the following text. Fix grammar, style, and readability issues in {style} style. 文の意味を変えないこと。未知の用語はそのまま残すこと。結果だけを出力してください。"
+
+diff_processor:
+  enabled: true  # DiffProcessorを有効化
+  model: "gpt-4.1-mini"
+  max_chunk_size: 2000
+  max_retries: 3
+  output_history: true
+  history_dir: "output_history"
+  improvement_focus: "advanced_style"  # advanced_style, grammar_style, business_style
 
 glossary:
   path:

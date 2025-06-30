@@ -1,7 +1,7 @@
 from typing import Any, Dict, List
 
 from .config import Config
-from .processors import Translator, Proofreader, Evaluator, Fixer, SpellChecker
+from .processors import Translator, Proofreader, Evaluator, Fixer, SpellChecker, DiffProcessor
 from .processors.evaluator import EvaluationResult
 from .utils import split_into_chunks
 
@@ -14,6 +14,7 @@ def _process_chunk(
     evaluator: Evaluator,
     fixer: Fixer,
     spellchecker: SpellChecker,
+    diff_processor: DiffProcessor = None,
 ) -> Dict[str, Any]:
     """Process a single text chunk through the pipeline."""
     prev_quality = 0.0
@@ -22,9 +23,11 @@ def _process_chunk(
     metadata: Dict[str, Any] = {}
 
     for retries in range(cfg.pipeline.max_retries + 1):
-        trans = translator.process(text)
-        text = trans["text"]
-        metadata.update(trans.get("metadata", {}))
+        # 翻訳が有効な場合のみ実行
+        if hasattr(cfg.translator, 'enabled') and cfg.translator.enabled:
+            trans = translator.process(text)
+            text = trans["text"]
+            metadata.update(trans.get("metadata", {}))
 
         if cfg.proofreader.enabled:
             pf = proofreader.process(
@@ -75,6 +78,32 @@ def _process_chunk(
         text = spell_result["text"]
         metadata.update(spell_result.get("metadata", {}))
 
+    # DiffProcessorを実行（Proofreaderの後、品質が低い場合）
+    print(f"DEBUG: quality={quality}, threshold={cfg.pipeline.diff_improvement_threshold}")
+    print(f"DEBUG: diff_processor={diff_processor is not None}, enabled={cfg.diff_processor.enabled}")
+    
+    if (diff_processor and 
+        cfg.diff_processor.enabled and 
+        quality < cfg.pipeline.diff_improvement_threshold):
+        
+        print("DEBUG: DiffProcessor conditions met, executing...")
+        diff_result = diff_processor.process(text)
+        print(f"DEBUG: diff_result changed={diff_result['metadata']['changed']}")
+        
+        if diff_result["metadata"]["changed"]:
+            text = diff_result["text"]
+            metadata["diff_processor_applied"] = True
+            metadata["diff_iterations"] = diff_result["metadata"]["iterations"]
+            
+            # DiffProcessor適用後の品質を再評価
+            final_eval = evaluator.evaluate(text)
+            metadata["final_quality_after_diff"] = final_eval["quality_score"]
+            print("DEBUG: DiffProcessor applied successfully")
+        else:
+            print("DEBUG: DiffProcessor executed but no changes made")
+    else:
+        print("DEBUG: DiffProcessor conditions not met")
+
     metadata["retries"] = retries
 
     return {"text": text, "metadata": metadata}
@@ -82,13 +111,13 @@ def _process_chunk(
 
 def process_text(
     text: str,
-
     cfg: Config,
     translator: Translator,
     proofreader: Proofreader,
     evaluator: Evaluator,
     fixer: Fixer,
     spellchecker: SpellChecker,
+    diff_processor: DiffProcessor = None,
     max_tokens: int = 2048,
 ) -> Dict[str, Any]:
     """Run text through translation, proofreading, evaluation and fixing.
@@ -102,7 +131,7 @@ def process_text(
 
     if len(chunks) == 1:
         return _process_chunk(
-            chunks[0], cfg, translator, proofreader, evaluator, fixer, spellchecker
+            chunks[0], cfg, translator, proofreader, evaluator, fixer, spellchecker, diff_processor
         )
 
     all_text: List[str] = []
@@ -111,7 +140,7 @@ def process_text(
     retry_sum = 0
 
     for chunk in chunks:
-        result = _process_chunk(chunk, cfg, translator, proofreader, evaluator, fixer, spellchecker)
+        result = _process_chunk(chunk, cfg, translator, proofreader, evaluator, fixer, spellchecker, diff_processor)
         all_text.append(result["text"])
         m = result["metadata"]
         meta_list.append(m)

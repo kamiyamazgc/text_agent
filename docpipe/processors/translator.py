@@ -9,6 +9,11 @@ import re
 from typing import Any, Dict, Optional
 
 from ..glossary import Glossary
+from ..utils.markdown_utils import (
+    is_markdown_file, 
+    extract_critical_markdown_blocks,
+    restore_critical_markdown_blocks
+)
 
 
 class Translator:
@@ -61,8 +66,50 @@ class Translator:
         else:
             return "en"
 
-    def translate(self, text: str, target_lang: str = "ja") -> str:
-        """Translate text to the target language using ChatCompletion."""
+    def translate(self, text: str, source_lang: str = "en", target_lang: str = "ja") -> str:
+        """Translate text from source language to target language."""
+        if not text.strip():
+            return text
+        
+        # Markdownファイルの場合は見出し・表・画像を絶対保護
+        critical_blocks = {}
+        if is_markdown_file(text):
+            print("DEBUG: Translator - Markdown file detected")
+            # 見出し・表・画像を絶対保護
+            text, critical_blocks = extract_critical_markdown_blocks(text)
+            print(f"DEBUG: Translator - Protected {len(critical_blocks)} critical blocks (headers, tables, images)")
+        
+        # 通常の翻訳処理
+        if is_markdown_file(text):
+            # Markdown対応翻訳
+            result = self._translate_with_markdown_preservation(text, target_lang, {})
+        else:
+            # 通常翻訳
+            result = self._translate_text(text, source_lang, target_lang)
+        
+        # 見出し・表・画像を必ず復元
+        if critical_blocks:
+            print("DEBUG: Translator - Restoring critical markdown blocks (headers, tables, images)")
+            result = restore_critical_markdown_blocks(result, critical_blocks)
+            print(f"DEBUG: Translator - Restored {len(critical_blocks)} critical blocks")
+        
+        return result
+
+    def translate_markdown(self, text: str, target_lang: str = "ja") -> str:
+        """Translate Markdown text while preserving formatting."""
+        # Markdownブロックを抽出して保護（重要な要素のみ）
+        processed_text, markdown_blocks = extract_critical_markdown_blocks(text)
+        
+        # テキストコンテンツのみを翻訳（Markdown構造保持の指示付き）
+        translated_text = self._translate_with_markdown_preservation(processed_text, target_lang, markdown_blocks)
+        
+        # Markdownブロックを復元
+        translated_text = restore_critical_markdown_blocks(translated_text, markdown_blocks)
+        
+        return translated_text
+    
+    def _translate_text(self, text: str, source_lang: str, target_lang: str) -> str:
+        """Translate plain text from source language to target language."""
         detected_lang = self.detect_language(text)
         if detected_lang == target_lang:
             return text
@@ -87,29 +134,66 @@ class Translator:
             # カスタムプロンプトの場合は元の処理を使用
             prompt = self.prompt.format(target_lang=target_lang, text=text)
         
-        if hasattr(openai, "ChatCompletion"):
-            resp = openai.ChatCompletion.create(
-                model=self.model,
-                messages=[{"role": "user", "content": prompt}],
-                temperature=self.temperature,
-            )
-        else:
-            resp = openai.chat.completions.create(
-                model=self.model,
-                messages=[{"role": "user", "content": prompt}],
-                temperature=self.temperature,
-            )
-        if isinstance(resp, dict):
-            text = resp["choices"][0]["message"]["content"].strip()
-        else:
-            text = resp.choices[0].message.content.strip()
+        # 新APIで統一
+        client = OpenAI()
+        resp = client.chat.completions.create(
+            model=self.model,
+            messages=[{"role": "user", "content": prompt}],
+            temperature=self.temperature,
+        )
+        text = resp.choices[0].message.content.strip()
         if self.glossary is not None:
             text = self.glossary.replace(text)
         return text
 
+    def _translate_with_markdown_preservation(self, text: str, target_lang: str, markdown_blocks: dict) -> str:
+        """Translate text while preserving markdown placeholders."""
+        print(f"=== Translator: 入力テキスト（最初の100文字） ===")
+        print(repr(text[:100]))
+        print(f"=== Translator: 入力テキスト（全体の長さ: {len(text)}文字） ===")
+        
+        # 重要なMarkdownプレースホルダーを検出（見出し・表・画像のみ）
+        critical_placeholders = re.findall(r'__CRITICAL_[A-Z_]+_\d+__', text)
+        image_placeholders = [p for p in critical_placeholders if 'IMAGE' in p]
+        table_placeholders = [p for p in critical_placeholders if 'TABLE' in p]
+        header_placeholders = [p for p in critical_placeholders if 'HEADER' in p]
+        
+        # 翻訳プロンプトにMarkdown保持の指示を追加
+        prompt = f"""Translate into {target_lang}. Don't modify or delete any Markdown format. Answer the result only:
+
+{text}"""
+        
+        print(f"=== Translator: LLM送信前テキスト（最初の100文字） ===")
+        print(repr(text[:100]))
+        print(f"=== Translator: プロンプト（最初の200文字） ===")
+        print(repr(prompt[:200]))
+        
+        # 新APIで統一
+        client = OpenAI()
+        resp = client.chat.completions.create(
+            model=self.model,
+            messages=[{"role": "user", "content": prompt}],
+            temperature=self.temperature,
+        )
+        translated = resp.choices[0].message.content.strip()
+        
+        print(f"=== Translator: LLM返却テキスト（最初の100文字） ===")
+        print(repr(translated[:100]))
+        print(f"=== Translator: LLM返却テキスト（全体の長さ: {len(translated)}文字） ===")
+        
+        if self.glossary is not None:
+            translated = self.glossary.replace(translated)
+        return translated
+
     def process(self, text: str) -> Dict[str, Any]:
         src_lang = self.detect_language(text)
-        translated = self.translate(text, "ja")
+        
+        # Markdownファイルの場合は特別な処理
+        if is_markdown_file(text):
+            translated = self.translate_markdown(text, "ja")
+        else:
+            translated = self.translate(text, "en", "ja")
+            
         return {
             "text": translated,
             "metadata": {"source_language": src_lang, "model": self.model},

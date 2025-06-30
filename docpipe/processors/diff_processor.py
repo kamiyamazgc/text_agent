@@ -2,7 +2,12 @@ import os
 import re
 from datetime import datetime
 from typing import List, Dict, Any
-from openai import OpenAI
+try:
+    import openai
+    from openai import OpenAI
+except Exception:  # pragma: no cover - optional dependency
+    openai = None  # type: ignore
+    OpenAI = None  # type: ignore
 
 from ..utils.markdown_utils import (
     is_markdown_file, 

@@ -162,6 +162,7 @@ whisper:
 output_dir: "output"
 temp_dir: "temp"
 log_dir: "logs"
+log_level: "INFO"
 output_extension: ".md"
 ```
 

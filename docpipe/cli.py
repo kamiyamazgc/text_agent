@@ -5,6 +5,7 @@ from itertools import chain
 import json
 import re
 from datetime import datetime
+import logging
 
 from .config import Config
 from .extractors.youtube import YouTubeExtractor
@@ -52,7 +53,8 @@ def cli():
 @click.argument("sources", nargs=-1, required=True)
 @click.option("--config", "-c", type=click.Path(exists=True), help="Path to config file")
 @click.option("--output-dir", "-o", type=click.Path(), help="Output directory")
-def process(sources: List[str], config: Optional[str], output_dir: Optional[str]) -> None:
+@click.option("--log-level", type=click.Choice(["DEBUG", "INFO", "WARNING", "ERROR", "CRITICAL"]), help="Logging level")
+def process(sources: List[str], config: Optional[str], output_dir: Optional[str], log_level: Optional[str]) -> None:
     """Process one or more document sources.
 
     Sources can be individual files, URLs, or directories. Directory paths are
@@ -61,6 +63,9 @@ def process(sources: List[str], config: Optional[str], output_dir: Optional[str]
     cfg = Config.load(config)
     if output_dir:
         cfg.output_dir = Path(output_dir)
+    if log_level:
+        cfg.log_level = log_level
+    logging.basicConfig(level=getattr(logging, cfg.log_level.upper(), logging.INFO))
 
     sources = _expand_sources(list(sources))
     

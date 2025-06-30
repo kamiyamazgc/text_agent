@@ -1,5 +1,6 @@
 import os
 import re
+import logging
 from datetime import datetime
 from typing import List, Dict, Any
 try:
@@ -10,10 +11,12 @@ except Exception:  # pragma: no cover - optional dependency
     OpenAI = None  # type: ignore
 
 from ..utils.markdown_utils import (
-    is_markdown_file, 
+    is_markdown_file,
     extract_critical_markdown_blocks,
     restore_critical_markdown_blocks
 )
+
+logger = logging.getLogger(__name__)
 
 
 class DiffProcessor:
@@ -214,7 +217,7 @@ class DiffProcessor:
         with open(filepath, 'w', encoding='utf-8') as f:
             f.write(text)
         
-        print(f"DEBUG: Saved improved text for chunk {chunk_num} to {filepath}")
+        logger.debug("Saved improved text for chunk %s to %s", chunk_num, filepath)
         return filepath
     
     def process(self, text: str) -> Dict[str, Any]:
@@ -222,15 +225,18 @@ class DiffProcessor:
         if not text.strip():
             return {"text": text, "metadata": {"iterations": 0, "changed": False}}
         
-        print(f"DEBUG: DiffProcessor processing text of length {len(text)}")
+        logger.debug("DiffProcessor processing text of length %s", len(text))
         
         # Markdownファイルの場合は見出し・表・画像を絶対保護
         critical_blocks = {}
         if is_markdown_file(text):
-            print("DEBUG: Markdown file detected")
+            logger.debug("Markdown file detected")
             # 見出し・表・画像を絶対保護
             text, critical_blocks = extract_critical_markdown_blocks(text)
-            print(f"DEBUG: Protected {len(critical_blocks)} critical blocks (headers, tables, images)")
+            logger.debug(
+                "Protected %s critical blocks (headers, tables, images)",
+                len(critical_blocks),
+            )
         
         # 通常のDiffProcessor処理
         original_text = text
@@ -240,13 +246,13 @@ class DiffProcessor:
         
         # Split into chunks if needed
         chunks = self.split_text_into_chunks(text)
-        print(f"DEBUG: Split into {len(chunks)} chunks")
+        logger.debug("Split into %s chunks", len(chunks))
         
         if len(chunks) > 1:
             # Process each chunk separately
             improved_chunks = []
             for i, chunk in enumerate(chunks):
-                print(f"DEBUG: Processing chunk {i+1}/{len(chunks)}")
+                logger.debug("Processing chunk %s/%s", i + 1, len(chunks))
                 improved_chunk = self._process_chunk(chunk, i+1)
                 improved_chunks.append(improved_chunk)
             
@@ -259,9 +265,9 @@ class DiffProcessor:
         
         # 見出し・表・画像を必ず復元
         if critical_blocks:
-            print("DEBUG: Restoring critical markdown blocks (headers, tables, images)")
+            logger.debug("Restoring critical markdown blocks (headers, tables, images)")
             improved_text = restore_critical_markdown_blocks(improved_text, critical_blocks)
-            print(f"DEBUG: Restored {len(critical_blocks)} critical blocks")
+            logger.debug("Restored %s critical blocks", len(critical_blocks))
         
         changed = improved_text != original_text
         
@@ -277,8 +283,8 @@ class DiffProcessor:
     
     def _process_chunk(self, chunk: str, chunk_num: int) -> str:
         """Process a single chunk of text."""
-        print(f"=== DiffProcessor: 入力チャンク（最初の100文字） ===")
-        print(repr(chunk[:100]))
+        logger.debug("=== DiffProcessor: 入力チャンク（最初の100文字） ===")
+        logger.debug(repr(chunk[:100]))
         
         original_chunk = chunk
         improved_chunk = chunk
@@ -288,8 +294,8 @@ class DiffProcessor:
                 # Generate improvement prompt
                 prompt = self.generate_diff_prompt(improved_chunk)
                 
-                print(f"=== DiffProcessor: LLM送信前テキスト（最初の100文字） ===")
-                print(repr(improved_chunk[:100]))
+                logger.debug("=== DiffProcessor: LLM送信前テキスト（最初の100文字） ===")
+                logger.debug(repr(improved_chunk[:100]))
                 
                 # Call LLM for direct text improvement
                 client = OpenAI()
@@ -300,22 +306,25 @@ class DiffProcessor:
                 )
                 
                 improved_response = resp.choices[0].message.content.strip()
-                print(f"=== DiffProcessor: LLM返却テキスト（最初の100文字） ===")
-                print(repr(improved_response[:100]))
-                print(f"DEBUG: Received improvement response of length {len(improved_response)}")
+                logger.debug("=== DiffProcessor: LLM返却テキスト（最初の100文字） ===")
+                logger.debug(repr(improved_response[:100]))
+                logger.debug(
+                    "Received improvement response of length %s",
+                    len(improved_response),
+                )
                 
                 # Validate the response
                 if improved_response and improved_response != original_chunk:
                     improved_chunk = improved_response
-                    print(f"DEBUG: Chunk {chunk_num} improved successfully")
+                    logger.debug("Chunk %s improved successfully", chunk_num)
                     break
                 else:
-                    print(f"DEBUG: No improvement in attempt {attempt + 1}")
+                    logger.debug("No improvement in attempt %s", attempt + 1)
                     
             except Exception as e:
-                print(f"DEBUG: Error in attempt {attempt + 1}: {e}")
+                logger.debug("Error in attempt %s: %s", attempt + 1, e)
                 if attempt == self.max_retries - 1:
-                    print(f"DEBUG: Max retries reached for chunk {chunk_num}, keeping original")
+                    logger.debug("Max retries reached for chunk %s, keeping original", chunk_num)
         
         # Save iteration result
         if self.output_history:

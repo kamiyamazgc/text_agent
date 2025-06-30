@@ -69,6 +69,7 @@ class Config(BaseModel):
     output_dir: Path = Path("output")
     temp_dir: Path = Path("temp")
     log_dir: Path = Path("logs")
+    log_level: str = "INFO"
     output_extension: str = ".md"
     enable_markdown_headings: bool = True
 
@@ -82,6 +83,7 @@ class Config(BaseModel):
         # ensure new option has default when missing
         cfg.output_extension = data.get("output_extension", ".md")
         cfg.enable_markdown_headings = data.get("enable_markdown_headings", True)
+        cfg.log_level = data.get("log_level", "INFO")
         # force default models regardless of file values for consistency
         cfg.translator.model = "gpt-4.1-mini"
         cfg.proofreader.model = "gpt-4.1-mini"
@@ -108,4 +110,5 @@ class Config(BaseModel):
             except AttributeError:  # pragma: no cover - Pydantic v1 fallback
                 data = self.dict()  # type: ignore[attr-defined]
             data["output_extension"] = self.output_extension
+            data["log_level"] = self.log_level
             yaml.dump(data, f, allow_unicode=True)

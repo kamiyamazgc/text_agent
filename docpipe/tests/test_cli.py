@@ -82,7 +82,7 @@ def test_cli_uses_whisper_model(monkeypatch):
     cfg.whisper.model = "custom"
     monkeypatch.setattr(cli_module.Config, "load", classmethod(lambda cls, path=None: cfg))
 
-    cli_module.process.callback(["dummy"], None, None)
+    cli_module.process.callback(["dummy"], None, None, None)
 
     assert called["model"] == "custom"
 
@@ -149,7 +149,7 @@ def test_cli_uses_progressbar(monkeypatch, tmp_path):
     cfg.output_dir = tmp_path
     monkeypatch.setattr(cli_module.Config, "load", classmethod(lambda cls, path=None: cfg))
 
-    cli_module.process.callback(["dummy1", "dummy2"], None, None)
+    cli_module.process.callback(["dummy1", "dummy2"], None, None, None)
 
     assert called["called"]
     assert called["length"] == 2

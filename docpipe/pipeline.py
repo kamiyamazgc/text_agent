@@ -1,9 +1,12 @@
 from typing import Any, Dict, List
+import logging
 
 from .config import Config
 from .processors import Translator, Proofreader, Evaluator, Fixer, SpellChecker, DiffProcessor
 from .processors.evaluator import EvaluationResult
 from .utils import split_into_chunks
+
+logger = logging.getLogger(__name__)
 
 
 def _process_chunk(
@@ -79,16 +82,24 @@ def _process_chunk(
         metadata.update(spell_result.get("metadata", {}))
 
     # DiffProcessorを実行（Proofreaderの後、品質が低い場合）
-    print(f"DEBUG: quality={quality}, threshold={cfg.pipeline.diff_improvement_threshold}")
-    print(f"DEBUG: diff_processor={diff_processor is not None}, enabled={cfg.diff_processor.enabled}")
+    logger.debug(
+        "quality=%s, threshold=%s",
+        quality,
+        cfg.pipeline.diff_improvement_threshold,
+    )
+    logger.debug(
+        "diff_processor=%s, enabled=%s",
+        diff_processor is not None,
+        cfg.diff_processor.enabled,
+    )
     
     if (diff_processor and 
         cfg.diff_processor.enabled and 
         quality < cfg.pipeline.diff_improvement_threshold):
         
-        print("DEBUG: DiffProcessor conditions met, executing...")
+        logger.debug("DiffProcessor conditions met, executing...")
         diff_result = diff_processor.process(text)
-        print(f"DEBUG: diff_result changed={diff_result['metadata']['changed']}")
+        logger.debug("diff_result changed=%s", diff_result['metadata']['changed'])
         
         if diff_result["metadata"]["changed"]:
             text = diff_result["text"]
@@ -98,11 +109,11 @@ def _process_chunk(
             # DiffProcessor適用後の品質を再評価
             final_eval = evaluator.evaluate(text)
             metadata["final_quality_after_diff"] = final_eval["quality_score"]
-            print("DEBUG: DiffProcessor applied successfully")
+            logger.debug("DiffProcessor applied successfully")
         else:
-            print("DEBUG: DiffProcessor executed but no changes made")
+            logger.debug("DiffProcessor executed but no changes made")
     else:
-        print("DEBUG: DiffProcessor conditions not met")
+        logger.debug("DiffProcessor conditions not met")
 
     metadata["retries"] = retries
 

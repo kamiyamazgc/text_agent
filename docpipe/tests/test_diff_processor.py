@@ -1,4 +1,7 @@
 import pytest
+
+pytest.importorskip("openai")
+
 from unittest.mock import Mock, patch
 from docpipe.processors.diff_processor import DiffProcessor
 
